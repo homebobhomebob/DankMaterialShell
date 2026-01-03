@@ -576,10 +576,12 @@ Singleton {
         }
 
         var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
-
+        
+        var currentSettings = getMonitorCyclingSettings(identifier);
+        
         var newSettings = {};
         for (var key in monitorCyclingSettings) {
-            var isThisScreen = key === screen.name || (screen.model && key === screen.model);
+            var isThisScreen = key === identifier;
             if (!isThisScreen) {
                 newSettings[key] = monitorCyclingSettings[key];
             }
@@ -587,10 +589,10 @@ Singleton {
 
         if (!newSettings[identifier]) {
             newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
+                "enabled": currentSettings.enabled,  // ← Preservar estado actual  
+                "mode": currentSettings.mode,  
+                "interval": interval,  
+                "time": currentSettings.time  
             };
         }
         newSettings[identifier].interval = interval;
