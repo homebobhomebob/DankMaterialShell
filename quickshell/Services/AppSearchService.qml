@@ -8,7 +8,8 @@ import qs.Common
 Singleton {
     id: root
 
-    property var applications: DesktopEntries.applications.values.filter(app => !app.noDisplay)
+    property var applications: []
+    property var _cachedCategories: null
 
     readonly property int maxResults: 10
     readonly property int frecencySampleSize: 10
@@ -35,6 +36,197 @@ Singleton {
             "weight": 10
         }
     ]
+
+    function refreshApplications() {
+        applications = DesktopEntries.applications.values;
+        _cachedCategories = null;
+    }
+
+    readonly property string dmsLogoPath: Qt.resolvedUrl("../assets/danklogo2.svg")
+
+    readonly property var builtInPlugins: ({
+            "dms_settings": {
+                id: "dms_settings",
+                name: I18n.tr("Settings", "settings window title"),
+                icon: "svg+corner:" + dmsLogoPath + "|settings",
+                cornerIcon: "settings",
+                comment: "DMS",
+                action: "ipc:settings",
+                categories: ["Settings", "System"],
+                defaultTrigger: "",
+                isLauncher: false
+            },
+            "dms_notepad": {
+                id: "dms_notepad",
+                name: I18n.tr("Notepad", "Notepad"),
+                icon: "svg+corner:" + dmsLogoPath + "|description",
+                cornerIcon: "description",
+                comment: "DMS",
+                action: "ipc:notepad",
+                categories: ["Office", "Utility"],
+                defaultTrigger: "",
+                isLauncher: false
+            },
+            "dms_sysmon": {
+                id: "dms_sysmon",
+                name: I18n.tr("System Monitor", "sysmon window title"),
+                icon: "svg+corner:" + dmsLogoPath + "|monitor_heart",
+                cornerIcon: "monitor_heart",
+                comment: "DMS",
+                action: "ipc:processlist",
+                categories: ["System", "Monitor"],
+                defaultTrigger: "",
+                isLauncher: false
+            },
+            "dms_settings_search": {
+                id: "dms_settings_search",
+                name: I18n.tr("Settings", "settings window title"),
+                cornerIcon: "search",
+                comment: "DMS",
+                defaultTrigger: "?",
+                isLauncher: true
+            }
+        })
+
+    function getBuiltInPluginTrigger(pluginId) {
+        const plugin = builtInPlugins[pluginId];
+        if (!plugin)
+            return null;
+        return SettingsData.getBuiltInPluginSetting(pluginId, "trigger", plugin.defaultTrigger);
+    }
+
+    readonly property var coreApps: {
+        SettingsData.builtInPluginSettings;
+        const apps = [];
+        for (const pluginId in builtInPlugins) {
+            if (!SettingsData.getBuiltInPluginSetting(pluginId, "enabled", true))
+                continue;
+            const plugin = builtInPlugins[pluginId];
+            if (plugin.isLauncher)
+                continue;
+            apps.push({
+                name: plugin.name,
+                icon: plugin.icon,
+                comment: plugin.comment,
+                action: plugin.action,
+                categories: plugin.categories,
+                isCore: true,
+                builtInPluginId: pluginId
+            });
+        }
+        return apps;
+    }
+
+    function getBuiltInLauncherPlugins() {
+        const result = {};
+        for (const pluginId in builtInPlugins) {
+            const plugin = builtInPlugins[pluginId];
+            if (!plugin.isLauncher)
+                continue;
+            if (!SettingsData.getBuiltInPluginSetting(pluginId, "enabled", true))
+                continue;
+            result[pluginId] = plugin;
+        }
+        return result;
+    }
+
+    function getBuiltInLauncherTriggers() {
+        const triggers = {};
+        const launchers = getBuiltInLauncherPlugins();
+        for (const pluginId in launchers) {
+            const trigger = getBuiltInPluginTrigger(pluginId);
+            if (trigger && trigger.trim() !== "")
+                triggers[trigger] = pluginId;
+        }
+        return triggers;
+    }
+
+    function getBuiltInLauncherPluginsWithEmptyTrigger() {
+        const result = [];
+        const launchers = getBuiltInLauncherPlugins();
+        for (const pluginId in launchers) {
+            const trigger = getBuiltInPluginTrigger(pluginId);
+            if (!trigger || trigger.trim() === "")
+                result.push(pluginId);
+        }
+        return result;
+    }
+
+    function getBuiltInLauncherItems(pluginId, query) {
+        if (pluginId !== "dms_settings_search")
+            return [];
+
+        SettingsSearchService.search(query);
+        const results = SettingsSearchService.results;
+        const items = [];
+        for (let i = 0; i < results.length; i++) {
+            const r = results[i];
+            items.push({
+                name: r.label,
+                icon: "material:" + r.icon,
+                comment: r.category,
+                action: "settings_nav:" + r.tabIndex + ":" + r.section,
+                categories: ["Settings"],
+                isCore: true,
+                isBuiltInLauncher: true,
+                builtInPluginId: pluginId
+            });
+        }
+        return items;
+    }
+
+    function executeBuiltInLauncherItem(item) {
+        if (!item?.action)
+            return false;
+
+        const parts = item.action.split(":");
+        if (parts[0] !== "settings_nav")
+            return false;
+
+        const tabIndex = parseInt(parts[1]);
+        const section = parts.slice(2).join(":");
+        SettingsSearchService.navigateToSection(section);
+        PopoutService.openSettingsWithTabIndex(tabIndex);
+        return true;
+    }
+
+    function getCoreApps(query) {
+        if (!query || query.length === 0)
+            return coreApps;
+        const lowerQuery = query.toLowerCase();
+        return coreApps.filter(app => app.name.toLowerCase().includes(lowerQuery) || app.comment.toLowerCase().includes(lowerQuery));
+    }
+
+    function executeCoreApp(app) {
+        if (!app?.action)
+            return false;
+
+        const parts = app.action.split(":");
+        if (parts[0] !== "ipc")
+            return false;
+
+        switch (parts[1]) {
+        case "settings":
+            PopoutService.focusOrToggleSettings();
+            return true;
+        case "notepad":
+            PopoutService.openNotepad();
+            return true;
+        case "processlist":
+            PopoutService.showProcessListModal();
+            return true;
+        }
+        return false;
+    }
+
+    Connections {
+        target: DesktopEntries
+        function onApplicationsChanged() {
+            root.refreshApplications();
+        }
+    }
+
+    Component.onCompleted: refreshApplications()
 
     function tokenize(text) {
         return text.toLowerCase().trim().split(/[\s\-_]+/).filter(w => w.length > 0);
@@ -316,19 +508,20 @@ Singleton {
     }
 
     function getAllCategories() {
-        const categories = new Set([I18n.tr("All")]);
+        if (_cachedCategories)
+            return _cachedCategories;
 
+        const categories = new Set([I18n.tr("All")]);
         for (const app of applications) {
             const appCategories = getCategoriesForApp(app);
             appCategories.forEach(cat => categories.add(cat));
         }
 
-        // Add plugin categories
         const pluginCategories = getPluginCategories();
         pluginCategories.forEach(cat => categories.add(cat));
 
-        const result = Array.from(categories).sort();
-        return result;
+        _cachedCategories = Array.from(categories).sort();
+        return _cachedCategories;
     }
 
     function getAppsInCategory(category) {

@@ -62,12 +62,28 @@ Singleton {
     property bool _hasUnsavedChanges: false
     property var _loadedSettingsSnapshot: null
     property var pluginSettings: ({})
+    property var builtInPluginSettings: ({})
+
+    function getBuiltInPluginSetting(pluginId, key, defaultValue) {
+        if (!builtInPluginSettings[pluginId])
+            return defaultValue;
+        return builtInPluginSettings[pluginId][key] !== undefined ? builtInPluginSettings[pluginId][key] : defaultValue;
+    }
+
+    function setBuiltInPluginSetting(pluginId, key, value) {
+        const updated = JSON.parse(JSON.stringify(builtInPluginSettings));
+        if (!updated[pluginId])
+            updated[pluginId] = {};
+        updated[pluginId][key] = value;
+        builtInPluginSettings = updated;
+        saveSettings();
+    }
 
     property alias dankBarLeftWidgetsModel: leftWidgetsModel
     property alias dankBarCenterWidgetsModel: centerWidgetsModel
     property alias dankBarRightWidgetsModel: rightWidgetsModel
 
-    property string currentThemeName: "blue"
+    property string currentThemeName: "purple"
     property string currentThemeCategory: "generic"
     property string customThemeFile: ""
     property var registryThemeVariants: ({})
@@ -81,6 +97,13 @@ Singleton {
     property real cornerRadius: 12
     property int niriLayoutGapsOverride: -1
     property int niriLayoutRadiusOverride: -1
+    property int niriLayoutBorderSize: -1
+    property int hyprlandLayoutGapsOverride: -1
+    property int hyprlandLayoutRadiusOverride: -1
+    property int hyprlandLayoutBorderSize: -1
+    property int mangoLayoutGapsOverride: -1
+    property int mangoLayoutRadiusOverride: -1
+    property int mangoLayoutBorderSize: -1
 
     property bool use24HourClock: true
     property bool showSeconds: false
@@ -295,6 +318,8 @@ Singleton {
     property bool runDmsMatugenTemplates: true
     property bool matugenTemplateGtk: true
     property bool matugenTemplateNiri: true
+    property bool matugenTemplateHyprland: true
+    property bool matugenTemplateMangowc: true
     property bool matugenTemplateQt5ct: true
     property bool matugenTemplateQt6ct: true
     property bool matugenTemplateFirefox: true
@@ -347,6 +372,7 @@ Singleton {
     property bool fprintdAvailable: false
     property string lockScreenActiveMonitor: "all"
     property string lockScreenInactiveColor: "#000000"
+    property int lockScreenNotificationMode: 0
     property bool hideBrightnessSlider: false
 
     property int notificationTimeoutLow: 5000
@@ -434,7 +460,11 @@ Singleton {
             "maximizeDetection": true,
             "scrollEnabled": true,
             "scrollXBehavior": "column",
-            "scrollYBehavior": "workspace"
+            "scrollYBehavior": "workspace",
+            "shadowIntensity": 0,
+            "shadowOpacity": 60,
+            "shadowColorMode": "text",
+            "shadowCustomColor": "#000000"
         }
     ]
 
@@ -699,10 +729,15 @@ Singleton {
         }
     }
 
-    function updateNiriLayout() {
-        if (typeof NiriService !== "undefined" && typeof CompositorService !== "undefined" && CompositorService.isNiri) {
+    function updateCompositorLayout() {
+        if (typeof CompositorService === "undefined")
+            return;
+        if (CompositorService.isNiri && typeof NiriService !== "undefined")
             NiriService.generateNiriLayoutConfig();
-        }
+        if (CompositorService.isHyprland && typeof HyprlandService !== "undefined")
+            HyprlandService.generateLayoutConfig();
+        if (CompositorService.isDwl && typeof DwlService !== "undefined")
+            DwlService.generateLayoutConfig();
     }
 
     function applyStoredIconTheme() {
@@ -778,7 +813,7 @@ Singleton {
     readonly property var _hooks: ({
             "applyStoredTheme": applyStoredTheme,
             "regenSystemThemes": regenSystemThemes,
-            "updateNiriLayout": updateNiriLayout,
+            "updateCompositorLayout": updateCompositorLayout,
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs
         })
@@ -840,11 +875,19 @@ Singleton {
     }
 
     function _onWritableCheckComplete(writable) {
+        const wasReadOnly = _isReadOnly;
         _isReadOnly = !writable;
         if (_isReadOnly) {
-            console.info("SettingsData: settings.json is read-only (NixOS home-manager mode)");
-        } else if (_pendingMigration) {
-            settingsFile.setText(JSON.stringify(_pendingMigration, null, 2));
+            _hasUnsavedChanges = _checkForUnsavedChanges();
+            if (!wasReadOnly)
+                console.info("SettingsData: settings.json is now read-only");
+        } else {
+            _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
+            _hasUnsavedChanges = false;
+            if (wasReadOnly)
+                console.info("SettingsData: settings.json is now writable");
+            if (_pendingMigration)
+                settingsFile.setText(JSON.stringify(_pendingMigration, null, 2));
         }
         _pendingMigration = null;
     }
@@ -889,11 +932,9 @@ Singleton {
     function saveSettings() {
         if (_loading || _parseError || !_hasLoaded)
             return;
-        if (_isReadOnly) {
-            _hasUnsavedChanges = _checkForUnsavedChanges();
-            return;
-        }
         settingsFile.setText(JSON.stringify(Store.toJson(root), null, 2));
+        if (_isReadOnly)
+            _checkSettingsWritable();
     }
 
     function savePluginSettings() {
@@ -1453,7 +1494,7 @@ Singleton {
 
     function setCornerRadius(radius) {
         set("cornerRadius", radius);
-        NiriService.generateNiriLayoutConfig();
+        updateCompositorLayout();
     }
 
     function setWeatherLocation(displayName, coordinates) {
@@ -1535,9 +1576,7 @@ Singleton {
                 "spacing": spacing
             });
         }
-        if (typeof NiriService !== "undefined" && CompositorService.isNiri) {
-            NiriService.generateNiriLayoutConfig();
-        }
+        updateCompositorLayout();
     }
 
     function setDankBarPosition(position) {
@@ -1888,6 +1927,10 @@ Singleton {
             if (!isGreeterMode) {
                 applyStoredTheme();
             }
+        }
+        onSaveFailed: error => {
+            root._isReadOnly = true;
+            root._hasUnsavedChanges = root._checkForUnsavedChanges();
         }
     }
 

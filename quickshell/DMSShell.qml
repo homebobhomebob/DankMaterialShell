@@ -3,6 +3,7 @@ import Quickshell
 import qs.Common
 import qs.Modals
 import qs.Modals.Clipboard
+import qs.Modals.Greeter
 import qs.Modals.Settings
 import qs.Modals.Spotlight
 import qs.Modules
@@ -605,6 +606,8 @@ Item {
 
         active: false
 
+        Component.onCompleted: PopoutService.processListModalLoader = processListModalLoader
+
         ProcessListModal {
             id: processListModal
 
@@ -657,6 +660,9 @@ Item {
                 }
             }
         }
+
+        onInstancesChanged: PopoutService.notepadSlideouts = instances
+        Component.onCompleted: PopoutService.notepadSlideouts = instances
     }
 
     LazyLoader {
@@ -814,6 +820,26 @@ Item {
         active: CompositorService.isNiri && SettingsData.niriOverviewOverlayEnabled
         component: NiriOverviewOverlay {
             id: niriOverviewOverlay
+        }
+    }
+
+    Loader {
+        id: greeterLoader
+        active: false
+        sourceComponent: GreeterModal {
+            onGreeterCompleted: greeterLoader.active = false
+            Component.onCompleted: show()
+        }
+
+        Connections {
+            target: FirstLaunchService
+            function onGreeterRequested() {
+                if (greeterLoader.active && greeterLoader.item) {
+                    greeterLoader.item.show();
+                } else {
+                    greeterLoader.active = true;
+                }
+            }
         }
     }
 }
