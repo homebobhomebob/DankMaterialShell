@@ -1,5 +1,5 @@
 pragma Singleton
-pragma ComponentBehavior
+pragma ComponentBehavior: Bound
 
 import QtCore
 import QtQuick
@@ -145,6 +145,7 @@ Singleton {
     property bool controlCenterShowMicPercent: true
     property bool controlCenterShowBatteryIcon: false
     property bool controlCenterShowPrinterIcon: false
+    property bool controlCenterShowScreenSharingIcon: true
     property bool showPrivacyButton: true
     property bool privacyShowMicIcon: false
     property bool privacyShowCameraIcon: false
@@ -200,10 +201,16 @@ Singleton {
     property bool showWorkspaceApps: false
     property bool groupWorkspaceApps: true
     property int maxWorkspaceIcons: 3
-    property bool workspacesPerMonitor: true
+    property bool workspaceFollowFocus: false
     property bool showOccupiedWorkspacesOnly: false
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
+    property string workspaceColorMode: "default"
+    property string workspaceUnfocusedColorMode: "default"
+    property string workspaceUrgentColorMode: "default"
+    property bool workspaceFocusedBorderEnabled: false
+    property string workspaceFocusedBorderColor: "primary"
+    property int workspaceFocusedBorderThickness: 2
     property var workspaceNameIcons: ({})
     property bool waveProgressEnabled: true
     property bool scrollTitleEnabled: true
@@ -215,6 +222,7 @@ Singleton {
     property bool keyboardLayoutNameCompactMode: false
     property bool runningAppsCurrentWorkspace: false
     property bool runningAppsGroupByApp: false
+    property var appIdSubstitutions: []
     property string centeringMode: "index"
     property string clockDateFormat: ""
     property string lockDateFormat: ""
@@ -245,6 +253,25 @@ Singleton {
     property bool qt5ctAvailable: false
     property bool qt6ctAvailable: false
     property bool gtkAvailable: false
+
+    property var cursorSettings: ({
+            "theme": "System Default",
+            "size": 24,
+            "niri": {
+                "hideWhenTyping": false,
+                "hideAfterInactiveMs": 0
+            },
+            "hyprland": {
+                "hideOnKeyPress": false,
+                "hideOnTouch": false,
+                "inactiveTimeout": 0
+            },
+            "dwl": {
+                "cursorHideTimeout": 0
+            }
+        })
+    property var availableCursorThemes: ["System Default"]
+    property string systemDefaultCursorTheme: ""
 
     property string launcherLogoMode: "apps"
     property string launcherLogoCustomPath: ""
@@ -299,9 +326,9 @@ Singleton {
     property int batteryChargeLimit: 100
     property bool lockBeforeSuspend: false
     property bool loginctlLockIntegration: true
-    property bool fadeToLockEnabled: false
+    property bool fadeToLockEnabled: true
     property int fadeToLockGracePeriod: 5
-    property bool fadeToDpmsEnabled: false
+    property bool fadeToDpmsEnabled: true
     property int fadeToDpmsGracePeriod: 5
     property string launchPrefix: ""
     property var brightnessDevicePins: ({})
@@ -339,6 +366,7 @@ Singleton {
 
     property bool showDock: false
     property bool dockAutoHide: false
+    property bool dockSmartAutoHide: false
     property bool dockGroupByApp: false
     property bool dockOpenOnOverview: false
     property int dockPosition: SettingsData.Position.Bottom
@@ -378,6 +406,7 @@ Singleton {
     property int notificationTimeoutLow: 5000
     property int notificationTimeoutNormal: 5000
     property int notificationTimeoutCritical: 0
+    property bool notificationCompactMode: false
     property int notificationPopupPosition: SettingsData.Position.Top
     property bool notificationHistoryEnabled: true
     property int notificationHistoryMaxCount: 50
@@ -511,6 +540,7 @@ Singleton {
     property var desktopWidgetPositions: ({})
     property var desktopWidgetGridSettings: ({})
     property var desktopWidgetInstances: []
+    property var desktopWidgetGroups: []
 
     function getDesktopWidgetGridSetting(screenKey, property, defaultValue) {
         const val = desktopWidgetGridSettings?.[screenKey]?.[property];
@@ -662,6 +692,38 @@ Singleton {
         saveSettings();
     }
 
+    function syncDesktopWidgetPositionToAllScreens(instanceId) {
+        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const idx = instances.findIndex(inst => inst.id === instanceId);
+        if (idx === -1)
+            return;
+        const positions = instances[idx].positions || {};
+        const screenKeys = Object.keys(positions).filter(k => k !== "_synced");
+        if (screenKeys.length === 0)
+            return;
+        const sourceKey = screenKeys[0];
+        const sourcePos = positions[sourceKey];
+        if (!sourcePos)
+            return;
+        const screen = Array.from(Quickshell.screens.values()).find(s => getScreenDisplayName(s) === sourceKey);
+        if (!screen)
+            return;
+        const screenW = screen.width;
+        const screenH = screen.height;
+        const synced = {};
+        if (sourcePos.x !== undefined)
+            synced.x = sourcePos.x / screenW;
+        if (sourcePos.y !== undefined)
+            synced.y = sourcePos.y / screenH;
+        if (sourcePos.width !== undefined)
+            synced.width = sourcePos.width;
+        if (sourcePos.height !== undefined)
+            synced.height = sourcePos.height;
+        instances[idx].positions["_synced"] = synced;
+        desktopWidgetInstances = instances;
+        saveSettings();
+    }
+
     function duplicateDesktopWidgetInstance(instanceId) {
         const source = getDesktopWidgetInstance(instanceId);
         if (!source)
@@ -692,6 +754,110 @@ Singleton {
 
     function getEnabledDesktopWidgetInstances() {
         return (desktopWidgetInstances || []).filter(inst => inst.enabled);
+    }
+
+    function moveDesktopWidgetInstance(instanceId, direction) {
+        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const idx = instances.findIndex(inst => inst.id === instanceId);
+        if (idx === -1)
+            return false;
+        const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= instances.length)
+            return false;
+        const temp = instances[idx];
+        instances[idx] = instances[targetIdx];
+        instances[targetIdx] = temp;
+        desktopWidgetInstances = instances;
+        saveSettings();
+        return true;
+    }
+
+    function reorderDesktopWidgetInstance(instanceId, newIndex) {
+        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const idx = instances.findIndex(inst => inst.id === instanceId);
+        if (idx === -1 || newIndex < 0 || newIndex >= instances.length)
+            return false;
+        const [item] = instances.splice(idx, 1);
+        instances.splice(newIndex, 0, item);
+        desktopWidgetInstances = instances;
+        saveSettings();
+        return true;
+    }
+
+    function reorderDesktopWidgetInstanceInGroup(instanceId, groupId, newIndexInGroup) {
+        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const groups = desktopWidgetGroups || [];
+        const groupMatches = inst => {
+            if (groupId === null)
+                return !inst.group || !groups.some(g => g.id === inst.group);
+            return inst.group === groupId;
+        };
+        const groupInstances = instances.filter(groupMatches);
+        const currentGroupIdx = groupInstances.findIndex(inst => inst.id === instanceId);
+        if (currentGroupIdx === -1 || currentGroupIdx === newIndexInGroup)
+            return false;
+        if (newIndexInGroup < 0 || newIndexInGroup >= groupInstances.length)
+            return false;
+        const globalIdx = instances.findIndex(inst => inst.id === instanceId);
+        if (globalIdx === -1)
+            return false;
+        const [item] = instances.splice(globalIdx, 1);
+        const targetInstance = groupInstances[newIndexInGroup];
+        let targetGlobalIdx = instances.findIndex(inst => inst.id === targetInstance.id);
+        if (newIndexInGroup > currentGroupIdx)
+            targetGlobalIdx++;
+        instances.splice(targetGlobalIdx, 0, item);
+        desktopWidgetInstances = instances;
+        saveSettings();
+        return true;
+    }
+
+    function createDesktopWidgetGroup(name) {
+        const id = "dwg_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+        const group = {
+            id: id,
+            name: name,
+            collapsed: false
+        };
+        const groups = JSON.parse(JSON.stringify(desktopWidgetGroups || []));
+        groups.push(group);
+        desktopWidgetGroups = groups;
+        saveSettings();
+        return group;
+    }
+
+    function updateDesktopWidgetGroup(groupId, updates) {
+        const groups = JSON.parse(JSON.stringify(desktopWidgetGroups || []));
+        const idx = groups.findIndex(g => g.id === groupId);
+        if (idx === -1)
+            return;
+        Object.assign(groups[idx], updates);
+        desktopWidgetGroups = groups;
+        saveSettings();
+    }
+
+    function removeDesktopWidgetGroup(groupId) {
+        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        for (let i = 0; i < instances.length; i++) {
+            if (instances[i].group === groupId)
+                instances[i].group = null;
+        }
+        desktopWidgetInstances = instances;
+        const groups = (desktopWidgetGroups || []).filter(g => g.id !== groupId);
+        desktopWidgetGroups = groups;
+        saveSettings();
+    }
+
+    function getDesktopWidgetGroup(groupId) {
+        return (desktopWidgetGroups || []).find(g => g.id === groupId) || null;
+    }
+
+    function getDesktopWidgetInstancesByGroup(groupId) {
+        return (desktopWidgetInstances || []).filter(inst => inst.group === groupId);
+    }
+
+    function getUngroupedDesktopWidgetInstances() {
+        return (desktopWidgetInstances || []).filter(inst => !inst.group);
     }
 
     signal forceDankBarLayoutRefresh
@@ -815,7 +981,8 @@ Singleton {
             "regenSystemThemes": regenSystemThemes,
             "updateCompositorLayout": updateCompositorLayout,
             "applyStoredIconTheme": applyStoredIconTheme,
-            "updateBarConfigs": updateBarConfigs
+            "updateBarConfigs": updateBarConfigs,
+            "updateCompositorCursor": updateCompositorCursor
         })
 
     function set(key, value) {
@@ -852,6 +1019,7 @@ Singleton {
             _hasLoaded = true;
             applyStoredTheme();
             applyStoredIconTheme();
+            updateCompositorCursor();
             Processes.detectQtTools();
 
             _checkSettingsWritable();
@@ -979,6 +1147,46 @@ Singleton {
                 }
             }
             availableIconThemes = themes;
+        });
+    }
+
+    function detectAvailableCursorThemes() {
+        const xdgDataDirs = Quickshell.env("XDG_DATA_DIRS") || "";
+        const localData = Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericDataLocation));
+        const homeDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.HomeLocation));
+
+        const dataDirs = xdgDataDirs.trim() !== "" ? xdgDataDirs.split(":").concat([localData]) : ["/usr/share", "/usr/local/share", localData];
+
+        const cursorPaths = dataDirs.map(d => d + "/icons").concat([homeDir + "/.icons", homeDir + "/.local/share/icons"]);
+        const pathsArg = cursorPaths.join(" ");
+
+        const script = `
+            echo "SYSDEFAULT:$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | sed "s/'//g" || echo '')"
+            for dir in ${pathsArg}; do
+                [ -d "$dir" ] || continue
+                for theme in "$dir"/*/; do
+                    [ -d "$theme" ] || continue
+                    [ -d "$theme/cursors" ] || continue
+                    basename "$theme"
+                done
+            done | grep -v '^icons$' | grep -v '^default$' | sort -u
+        `;
+
+        Proc.runCommand("detectCursorThemes", ["sh", "-c", script], (output, exitCode) => {
+            const themes = ["System Default"];
+            if (output && output.trim()) {
+                const lines = output.trim().split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith("SYSDEFAULT:")) {
+                        systemDefaultCursorTheme = line.substring(11).trim();
+                        continue;
+                    }
+                    if (line)
+                        themes.push(line);
+                }
+            }
+            availableCursorThemes = themes;
         });
     }
 
@@ -1510,6 +1718,94 @@ Singleton {
             Theme.generateSystemThemesFromCurrentTheme();
     }
 
+    function setCursorTheme(themeName) {
+        const updated = JSON.parse(JSON.stringify(cursorSettings));
+        updated.theme = themeName;
+        cursorSettings = updated;
+        saveSettings();
+        updateCompositorCursor();
+    }
+
+    function setCursorSize(size) {
+        const updated = JSON.parse(JSON.stringify(cursorSettings));
+        updated.size = size;
+        cursorSettings = updated;
+        saveSettings();
+        updateCompositorCursor();
+    }
+
+    // This solution for xwayland cursor themes is from the xwls discussion:
+    // https://github.com/Supreeeme/xwayland-satellite/issues/104
+    // no idea if this matters on other compositors but we also set XCURSOR stuff in the launcher
+    function updateCompositorCursor() {
+        updateXResources();
+        if (typeof CompositorService === "undefined")
+            return;
+        if (CompositorService.isNiri && typeof NiriService !== "undefined") {
+            NiriService.generateNiriCursorConfig();
+            return;
+        }
+        if (CompositorService.isHyprland && typeof HyprlandService !== "undefined") {
+            HyprlandService.generateCursorConfig();
+            return;
+        }
+        if (CompositorService.isDwl && typeof DwlService !== "undefined") {
+            DwlService.generateCursorConfig();
+            return;
+        }
+    }
+
+    function updateXResources() {
+        const homeDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.HomeLocation));
+        const xresourcesPath = homeDir + "/.Xresources";
+        const themeName = cursorSettings.theme === "System Default" ? systemDefaultCursorTheme : cursorSettings.theme;
+        const size = cursorSettings.size || 24;
+
+        if (!themeName)
+            return;
+
+        const script = `
+            xresources_file="${xresourcesPath}"
+            temp_file="\${xresources_file}.tmp.$$"
+            theme_name="${themeName}"
+            cursor_size="${size}"
+
+            if [ -f "$xresources_file" ]; then
+                grep -v '^[[:space:]]*Xcursor\\.theme:' "$xresources_file" | grep -v '^[[:space:]]*Xcursor\\.size:' > "$temp_file" 2>/dev/null || true
+            else
+                touch "$temp_file"
+            fi
+
+            echo "Xcursor.theme: $theme_name" >> "$temp_file"
+            echo "Xcursor.size: $cursor_size" >> "$temp_file"
+            mv "$temp_file" "$xresources_file"
+            xrdb -merge "$xresources_file" 2>/dev/null || true
+        `;
+
+        Quickshell.execDetached(["sh", "-c", script]);
+    }
+
+    function getCursorEnvironment() {
+        const isSystemDefault = cursorSettings.theme === "System Default";
+        const isDefaultSize = !cursorSettings.size || cursorSettings.size === 24;
+        if (isSystemDefault && isDefaultSize)
+            return {};
+
+        const themeName = isSystemDefault ? "" : cursorSettings.theme;
+        const size = String(cursorSettings.size || 24);
+        const env = {};
+
+        if (!isDefaultSize) {
+            env["XCURSOR_SIZE"] = size;
+            env["HYPRCURSOR_SIZE"] = size;
+        }
+        if (themeName) {
+            env["XCURSOR_THEME"] = themeName;
+            env["HYPRCURSOR_THEME"] = themeName;
+        }
+        return env;
+    }
+
     function setGtkThemingEnabled(enabled) {
         set("gtkThemingEnabled", enabled);
         if (enabled && typeof Theme !== "undefined") {
@@ -1685,6 +1981,48 @@ Singleton {
 
     function getWorkspaceNameIcon(workspaceName) {
         return workspaceNameIcons[workspaceName] || null;
+    }
+
+    function addAppIdSubstitution(pattern, replacement, type) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        subs.push({
+            pattern: pattern,
+            replacement: replacement,
+            type: type
+        });
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function updateAppIdSubstitution(index, pattern, replacement, type) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        if (index < 0 || index >= subs.length)
+            return;
+        subs[index] = {
+            pattern: pattern,
+            replacement: replacement,
+            type: type
+        };
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function removeAppIdSubstitution(index) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        if (index < 0 || index >= subs.length)
+            return;
+        subs.splice(index, 1);
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function getDefaultAppIdSubstitutions() {
+        return Spec.SPEC.appIdSubstitutions.def;
+    }
+
+    function resetAppIdSubstitutions() {
+        appIdSubstitutions = JSON.parse(JSON.stringify(Spec.SPEC.appIdSubstitutions.def));
+        saveSettings();
     }
 
     function getRegistryThemeVariant(themeId, defaultVariant) {
@@ -1914,6 +2252,7 @@ Singleton {
                 _hasLoaded = true;
                 applyStoredTheme();
                 applyStoredIconTheme();
+                updateCompositorCursor();
             } catch (e) {
                 _parseError = true;
                 const msg = e.message;

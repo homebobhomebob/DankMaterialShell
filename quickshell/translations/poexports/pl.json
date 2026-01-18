@@ -20,6 +20,12 @@
   "%1 display(s)": {
     "%1 display(s)": "%1 wyświetlaczy"
   },
+  "%1 exists but is not included in config. Custom keybinds will not work until this is fixed.": {
+    "%1 exists but is not included in config. Custom keybinds will not work until this is fixed.": ""
+  },
+  "%1 is now included in config": {
+    "%1 is now included in config": ""
+  },
   "%1 job(s)": {
     "%1 job(s)": "%1 zadań"
   },
@@ -164,6 +170,9 @@
   "Activate": {
     "Activate": "Aktywuj"
   },
+  "Activation": {
+    "Activation": ""
+  },
   "Active": {
     "Active": "Aktywny"
   },
@@ -230,8 +239,14 @@
   "All displays": {
     "All displays": "Wszystkie ekrany"
   },
+  "Allow clicks to pass through the widget": {
+    "Allow clicks to pass through the widget": ""
+  },
   "Alt+←/Backspace: Back • F1/I: File Info • F10: Help • Esc: Close": {
     "Alt+←/Backspace: Back • F1/I: File Info • F10: Help • Esc: Close": "Alt+←/Backspace: Wstecz • F1/I: Informacje o pliku • F10: Pomoc • Esc: Zamknij"
+  },
+  "Always Active": {
+    "Always Active": ""
   },
   "Always Show Percentage": {
     "Always Show Percentage": "Zawsze pokazuj procenty"
@@ -262,6 +277,9 @@
   },
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "Tożsamość anonimowa (opcjonalnie)"
+  },
+  "App ID Substitutions": {
+    "App ID Substitutions": ""
   },
   "App Launcher": {
     "App Launcher": "Program Uruchamiający"
@@ -364,6 +382,9 @@
   },
   "Auto-Clear After": {
     "Auto-Clear After": "Automatycznie czyść po"
+  },
+  "Auto-Hide Timeout": {
+    "Auto-Hide Timeout": ""
   },
   "Auto-close Niri overview when launching apps.": {
     "Auto-close Niri overview when launching apps.": "Automatycznie zamknij podgląd Niri otwierając aplikacje."
@@ -692,6 +713,12 @@
   "Clear at Startup": {
     "Clear at Startup": "Wyczyść przy starcie"
   },
+  "Click 'Setup' to create %1 and add include to config.": {
+    "Click 'Setup' to create %1 and add include to config.": ""
+  },
+  "Click 'Setup' to create cursor config and add include to your compositor config.": {
+    "Click 'Setup' to create cursor config and add include to your compositor config.": ""
+  },
   "Click 'Setup' to create dms/binds.kdl and add include to config.kdl.": {
     "Click 'Setup' to create dms/binds.kdl and add include to config.kdl.": "Kliknij 'Konfiguruj' by stworzyć dms/binds.kdl i dodać do config.kdl"
   },
@@ -700,6 +727,12 @@
   },
   "Click Import to add a .ovpn or .conf": {
     "Click Import to add a .ovpn or .conf": "Kliknij Importuj, aby dodać plik .ovpn lub .conf"
+  },
+  "Click Through": {
+    "Click Through": ""
+  },
+  "Click any shortcut to edit. Changes save to %1": {
+    "Click any shortcut to edit. Changes save to %1": ""
   },
   "Click any shortcut to edit. Changes save to dms/binds.kdl": {
     "Click any shortcut to edit. Changes save to dms/binds.kdl": "Kliknij dowolny skrót, aby edytować. Zmiany zostaną zapisane w pliku dms/binds.kdl."
@@ -836,6 +869,9 @@
   "Connect": {
     "Connect": "Połącz"
   },
+  "Connect to Hidden Network": {
+    "Connect to Hidden Network": ""
+  },
   "Connect to VPN": {
     "Connect to VPN": "Połącz z VPN"
   },
@@ -877,6 +913,9 @@
   },
   "Copied!": {
     "Copied!": "Skopiowane!"
+  },
+  "Copy": {
+    "Copy": ""
   },
   "Copy PID": {
     "Copy PID": "Kopiuj PID"
@@ -931,6 +970,18 @@
   },
   "Current: %1": {
     "Current: %1": "Aktualnie: %1"
+  },
+  "Cursor Config Not Configured": {
+    "Cursor Config Not Configured": ""
+  },
+  "Cursor Include Missing": {
+    "Cursor Include Missing": ""
+  },
+  "Cursor Size": {
+    "Cursor Size": ""
+  },
+  "Cursor Theme": {
+    "Cursor Theme": ""
   },
   "Custom": {
     "Custom": "Niestandardowy"
@@ -1376,6 +1427,9 @@
   "Enter launch prefix (e.g., 'uwsm-app')": {
     "Enter launch prefix (e.g., 'uwsm-app')": "Dodaj prefiks uruchamiania (np. 'uwsp-app')"
   },
+  "Enter network name and password": {
+    "Enter network name and password": ""
+  },
   "Enter passkey for ": {
     "Enter passkey for ": "Wprowadź klucz dostępu dla "
   },
@@ -1607,6 +1661,9 @@
   "Fixing...": {
     "Fixing...": "Ustalenie..."
   },
+  "Flags": {
+    "Flags": ""
+  },
   "Flipped": {
     "Flipped": "Odwrócony"
   },
@@ -1622,8 +1679,17 @@
   "Focus at Startup": {
     "Focus at Startup": "Aktywuj przy starcie"
   },
+  "Focused Border": {
+    "Focused Border": ""
+  },
+  "Focused Color": {
+    "Focused Color": ""
+  },
   "Focused Window": {
     "Focused Window": "Aktywne okno"
+  },
+  "Follow Monitor Focus": {
+    "Follow Monitor Focus": ""
   },
   "Follow focus": {
     "Follow focus": "Podążaj za kursorem"
@@ -1730,6 +1796,9 @@
   "Grid Columns": {
     "Grid Columns": "Kolumny siatki"
   },
+  "Group": {
+    "Group": ""
+  },
   "Group Workspace Apps": {
     "Group Workspace Apps": ""
   },
@@ -1739,8 +1808,14 @@
   "Group multiple windows of the same app together with a window count indicator": {
     "Group multiple windows of the same app together with a window count indicator": "Grupuj wiele okien tej samej aplikacji ze wskaźnikiem liczby okien"
   },
+  "Group removed": {
+    "Group removed": ""
+  },
   "Group repeated application icons in unfocused workspaces": {
     "Group repeated application icons in unfocused workspaces": ""
+  },
+  "Groups": {
+    "Groups": ""
   },
   "HDR (EDID)": {
     "HDR (EDID)": "HDR (EDID)"
@@ -1769,11 +1844,32 @@
   "Hibernate": {
     "Hibernate": "Hibernacja"
   },
+  "Hidden": {
+    "Hidden": ""
+  },
+  "Hidden Network": {
+    "Hidden Network": ""
+  },
   "Hide Delay": {
     "Hide Delay": "Ukryj opóźnienie"
   },
+  "Hide When Typing": {
+    "Hide When Typing": ""
+  },
   "Hide When Windows Open": {
     "Hide When Windows Open": "Ukryj Gdy Otwarte Są Okna"
+  },
+  "Hide cursor after inactivity (0 = disabled)": {
+    "Hide cursor after inactivity (0 = disabled)": ""
+  },
+  "Hide cursor when pressing keyboard keys": {
+    "Hide cursor when pressing keyboard keys": ""
+  },
+  "Hide cursor when using touch input": {
+    "Hide cursor when using touch input": ""
+  },
+  "Hide on Touch": {
+    "Hide on Touch": ""
   },
   "Hide the dock when not in use and reveal it when hovering near the dock area": {
     "Hide the dock when not in use and reveal it when hovering near the dock area": "Ukryj dok, gdy nie jest używany, i odkryj go po najechaniu kursorem w jego pobliże"
@@ -1937,6 +2033,15 @@
   "Key": {
     "Key": "Klawisz"
   },
+  "Keybind Sources": {
+    "Keybind Sources": ""
+  },
+  "Keybinds Search Settings": {
+    "Keybinds Search Settings": ""
+  },
+  "Keybinds shown alongside regular search results": {
+    "Keybinds shown alongside regular search results": ""
+  },
   "Keyboard Layout Name": {
     "Keyboard Layout Name": "Nazwa układu klawiatury"
   },
@@ -2060,6 +2165,9 @@
   "Lock fade grace period": {
     "Lock fade grace period": ""
   },
+  "Locked": {
+    "Locked": ""
+  },
   "Log Out": {
     "Log Out": "Wyloguj"
   },
@@ -2068,6 +2176,9 @@
   },
   "Long Text": {
     "Long Text": "Długi tekst"
+  },
+  "Long press": {
+    "Long press": ""
   },
   "Longitude": {
     "Longitude": "Długość geograficzna"
@@ -2101,6 +2212,9 @@
   },
   "Manual Show/Hide": {
     "Manual Show/Hide": "Ręczne pokazywanie/ukrywanie"
+  },
+  "Map window class names to icon names for proper icon display": {
+    "Map window class names to icon names for proper icon display": ""
   },
   "Margin": {
     "Margin": "Margines"
@@ -2255,6 +2369,12 @@
   "Mount": {
     "Mount": "Zamontuj"
   },
+  "Mouse pointer appearance": {
+    "Mouse pointer appearance": ""
+  },
+  "Mouse pointer size in pixels": {
+    "Mouse pointer size in pixels": ""
+  },
   "Move Widget": {
     "Move Widget": "Przesuń Widżet"
   },
@@ -2288,6 +2408,9 @@
   "Network Information": {
     "Network Information": "Informacje sieciowe"
   },
+  "Network Name (SSID)": {
+    "Network Name (SSID)": ""
+  },
   "Network Speed Monitor": {
     "Network Speed Monitor": "Monitor prędkości sieci"
   },
@@ -2314,6 +2437,9 @@
   },
   "New York, NY": {
     "New York, NY": "Nowy Jork, NY"
+  },
+  "New group name...": {
+    "New group name...": ""
   },
   "Next Transition": {
     "Next Transition": "Następne Przejście"
@@ -2546,6 +2672,9 @@
   "Options": {
     "Options": "Opcje"
   },
+  "Organize widgets into collapsible groups": {
+    "Organize widgets into collapsible groups": ""
+  },
   "Other": {
     "Other": "Inne"
   },
@@ -2617,6 +2746,9 @@
   },
   "Password": {
     "Password": "Hasło"
+  },
+  "Pattern": {
+    "Pattern": ""
   },
   "Pause": {
     "Pause": "Wstrzymaj"
@@ -2864,6 +2996,9 @@
   "Reject Jobs": {
     "Reject Jobs": "Odrzucaj zadania"
   },
+  "Release": {
+    "Release": ""
+  },
   "Reload Plugin": {
     "Reload Plugin": "Wczytaj ponownie wtyczkę"
   },
@@ -2872,6 +3007,12 @@
   },
   "Remove gaps and border when windows are maximized": {
     "Remove gaps and border when windows are maximized": "Usuń odstępy i ramkę gdy okna są zmaksymalizowane"
+  },
+  "Repeat": {
+    "Repeat": ""
+  },
+  "Replacement": {
+    "Replacement": ""
   },
   "Report": {
     "Report": "Raport"
@@ -3038,6 +3179,9 @@
   "Scrolling": {
     "Scrolling": "Przewijanie"
   },
+  "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": {
+    "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": ""
+  },
   "Search file contents": {
     "Search file contents": "Przeszukaj zawartość plików"
   },
@@ -3049,6 +3193,9 @@
   },
   "Search keybinds...": {
     "Search keybinds...": "Wyszukaj skróty klawiszowe..."
+  },
+  "Search keyboard shortcuts from your compositor and applications": {
+    "Search keyboard shortcuts from your compositor and applications": ""
   },
   "Search plugins...": {
     "Search plugins...": "Szukaj wtyczek..."
@@ -3092,6 +3239,9 @@
   "Select an image file...": {
     "Select an image file...": "Wybierz plik obrazu..."
   },
+  "Select at least one provider": {
+    "Select at least one provider": ""
+  },
   "Select device...": {
     "Select device...": "Wybierz urządzenie..."
   },
@@ -3115,6 +3265,9 @@
   },
   "Select the palette algorithm used for wallpaper-based colors": {
     "Select the palette algorithm used for wallpaper-based colors": "Wybierz algorytm palety używany dla kolorów tapet."
+  },
+  "Select which keybind providers to include": {
+    "Select which keybind providers to include": ""
   },
   "Select which transitions to include in randomization": {
     "Select which transitions to include in randomization": "Wybierz, które przejścia uwzględnić w losowaniu"
@@ -3275,6 +3428,9 @@
   "Show all 9 tags instead of only occupied tags (DWL only)": {
     "Show all 9 tags instead of only occupied tags (DWL only)": "Pokaż wszystkie 9 tagów zamiast tylko zajętych (tylko DWL)"
   },
+  "Show an outline ring around the focused workspace indicator": {
+    "Show an outline ring around the focused workspace indicator": ""
+  },
   "Show cava audio visualizer in media widget": {
     "Show cava audio visualizer in media widget": "Pokaż wizualizację audio cava w widżecie multimediów"
   },
@@ -3292,6 +3448,9 @@
   },
   "Show on Overview": {
     "Show on Overview": "Pokaż w podglądzie"
+  },
+  "Show on Overview Only": {
+    "Show on Overview Only": ""
   },
   "Show on all connected displays": {
     "Show on all connected displays": "Pokaż na wszystkich podłączonych wyświetlaczach"
@@ -3340,6 +3499,9 @@
   },
   "Show workspace name on horizontal bars, and first letter on vertical bars": {
     "Show workspace name on horizontal bars, and first letter on vertical bars": ""
+  },
+  "Show workspaces of the currently focused monitor": {
+    "Show workspaces of the currently focused monitor": ""
   },
   "Shows all running applications with focus indication": {
     "Shows all running applications with focus indication": "Pokazuje wszystkie uruchomione aplikacje ze wskaźnikiem fokusu"
@@ -3484,6 +3646,9 @@
   },
   "Sync Mode with Portal": {
     "Sync Mode with Portal": "Tryb synchronizacji z portalem"
+  },
+  "Sync Position Across Screens": {
+    "Sync Position Across Screens": ""
   },
   "Sync dark mode with settings portals for system-wide theme hints": {
     "Sync dark mode with settings portals for system-wide theme hints": "Synchronizuj ciemny motyw z systemem"
@@ -3683,11 +3848,20 @@
   "Transparency": {
     "Transparency": "Przezroczystość"
   },
+  "Trigger": {
+    "Trigger": ""
+  },
+  "Trigger Prefix": {
+    "Trigger Prefix": ""
+  },
   "Turn off monitors after": {
     "Turn off monitors after": "Wyłącz monitory po"
   },
   "Type": {
     "Type": "Typ"
+  },
+  "Type this prefix to search keybinds": {
+    "Type this prefix to search keybinds": ""
   },
   "Typography": {
     "Typography": "Typografia"
@@ -3697,6 +3871,12 @@
   },
   "Unavailable": {
     "Unavailable": "Niedostępny"
+  },
+  "Unfocused Color": {
+    "Unfocused Color": ""
+  },
+  "Ungrouped": {
+    "Ungrouped": ""
   },
   "Uninstall Plugin": {
     "Uninstall Plugin": "Odinstaluj wtyczkę"
@@ -3715,6 +3895,9 @@
   },
   "Unknown Network": {
     "Unknown Network": "Nieznana Sieć"
+  },
+  "Unpin": {
+    "Unpin": ""
   },
   "Unpin from Dock": {
     "Unpin from Dock": "Odepnij z doku"
@@ -3736,6 +3919,12 @@
   },
   "Update Plugin": {
     "Update Plugin": "Zaktualizuj wtyczkę"
+  },
+  "Urgent Color": {
+    "Urgent Color": ""
+  },
+  "Usage Tips": {
+    "Usage Tips": ""
   },
   "Use 24-hour time format instead of 12-hour AM/PM": {
     "Use 24-hour time format instead of 12-hour AM/PM": "Użyj 24-godzinnego formatu czasu zamiast 12-godzinnego AM/PM"
@@ -3788,8 +3977,17 @@
   "Use light theme instead of dark theme": {
     "Use light theme instead of dark theme": "Użyj jasnego motywu zamiast ciemnego"
   },
+  "Use smaller notification cards": {
+    "Use smaller notification cards": ""
+  },
   "Use sound theme from system settings": {
     "Use sound theme from system settings": "Użyj motywu dźwiękowego z ustawień systemowych"
+  },
+  "Use the same position and size on all displays": {
+    "Use the same position and size on all displays": ""
+  },
+  "Use trigger prefix to activate": {
+    "Use trigger prefix to activate": ""
   },
   "Use%": {
     "Use%": "Użycie %"
@@ -4024,6 +4222,9 @@
   "Workspace": {
     "Workspace": "Obszar roboczy"
   },
+  "Workspace Appearance": {
+    "Workspace Appearance": ""
+  },
   "Workspace Index Numbers": {
     "Workspace Index Numbers": "Numery indeksów obszarów roboczych"
   },
@@ -4072,6 +4273,9 @@
   "author attribution": {
     "by %1": "od %1"
   },
+  "bar shadow settings card": {
+    "Shadow": ""
+  },
   "browse themes button | theme browser header | theme browser window title": {
     "Browse Themes": "Przeglądaj Motywy"
   },
@@ -4104,6 +4308,9 @@
   },
   "dms/binds.kdl is now included in config.kdl": {
     "dms/binds.kdl is now included in config.kdl": "Plik dms/binds.kdl jest teraz zawarty w pliku config.kdl"
+  },
+  "dms/cursor config exists but is not included. Cursor settings won't apply.": {
+    "dms/cursor config exists but is not included. Cursor settings won't apply.": ""
   },
   "dms/outputs config exists but is not included in your compositor config. Display changes won't persist.": {
     "dms/outputs config exists but is not included in your compositor config. Display changes won't persist.": "Konfiguracja dms/outputs istnieje, ale nie jest dodana do konfiguracji twojego kompozytora. Zmiany nie będą miały efektu."
@@ -4204,7 +4411,8 @@
     "Modular widget bar": "",
     "Night mode & gamma": "",
     "Per-screen config": "",
-    "Quick system toggles": ""
+    "Quick system toggles": "",
+    "Security & privacy": ""
   },
   "greeter feature card title": {
     "App Theming": "",
@@ -4220,6 +4428,9 @@
   },
   "greeter feature card title | greeter settings link": {
     "DankBar": ""
+  },
+  "greeter feature card title | lock screen notifications settings card": {
+    "Lock Screen": ""
   },
   "greeter finish button": {
     "Finish": ""
@@ -4421,6 +4632,13 @@
   "settings_displays": {
     "Widgets": "Widżety"
   },
+  "shadow color option": {
+    "Surface": "",
+    "Text": ""
+  },
+  "shadow intensity slider": {
+    "Intensity": ""
+  },
   "source code link": {
     "source": "źródło"
   },
@@ -4456,6 +4674,9 @@
   },
   "update dms for NM integration.": {
     "update dms for NM integration.": "zaktualizuj dms dla integracji z NM."
+  },
+  "version requirement": {
+    "Requires %1": ""
   },
   "wallpaper directory file browser title": {
     "Select Wallpaper Directory": "Wybierz katalog z tapetami"

@@ -132,8 +132,11 @@ Item {
                 case "media":
                     root.dankDashPopoutLoader.item.currentTabIndex = 1;
                     break;
+                case "wallpaper":
+                    root.dankDashPopoutLoader.item.currentTabIndex = 2;
+                    break;
                 case "weather":
-                    root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 2 : 0;
+                    root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 3 : 0;
                     break;
                 default:
                     root.dankDashPopoutLoader.item.currentTabIndex = 0;
@@ -188,6 +191,13 @@ Item {
             }
             if (CompositorService.isNiri && NiriService.currentOutput) {
                 return NiriService.currentOutput;
+            }
+            if ((CompositorService.isSway || CompositorService.isScroll) && I3.workspaces?.values) {
+                const focusedWs = I3.workspaces.values.find(ws => ws.focused === true);
+                return focusedWs?.monitor?.name || "";
+            }
+            if (CompositorService.isDwl && DwlService.activeOutput) {
+                return DwlService.activeOutput;
             }
             return "";
         }
@@ -592,6 +602,39 @@ Item {
             return barConfig.autoHide ? "BAR_MANUAL_HIDE_SUCCESS" : "BAR_AUTO_HIDE_SUCCESS";
         }
 
+        function getPosition(selector: string, value: string): string {
+            const {
+                barConfig,
+                error
+            } = getBarConfig(selector, value);
+            if (error)
+                return error;
+            const positions = ["top", "bottom", "left", "right"];
+            return positions[barConfig.position] || "unknown";
+        }
+
+        function setPosition(selector: string, value: string, position: string): string {
+            const {
+                barConfig,
+                error
+            } = getBarConfig(selector, value);
+            if (error)
+                return error;
+            const positionMap = {
+                "top": SettingsData.Position.Top,
+                "bottom": SettingsData.Position.Bottom,
+                "left": SettingsData.Position.Left,
+                "right": SettingsData.Position.Right
+            };
+            const posValue = positionMap[position.toLowerCase()];
+            if (posValue === undefined)
+                return "BAR_INVALID_POSITION";
+            SettingsData.updateBarConfig(barConfig.id, {
+                position: posValue
+            });
+            return "BAR_POSITION_SET_SUCCESS";
+        }
+
         target: "bar"
     }
 
@@ -757,11 +800,9 @@ Item {
             const modal = PopoutService.settingsModal;
             if (modal) {
                 if (type === "wallpaper") {
-                    modal.wallpaperBrowser.allowStacking = false;
-                    modal.wallpaperBrowser.open();
+                    modal.openWallpaperBrowser(false);
                 } else if (type === "profile") {
-                    modal.profileBrowser.allowStacking = false;
-                    modal.profileBrowser.open();
+                    modal.openProfileBrowser(false);
                 }
             } else {
                 PopoutService.openSettings();
@@ -787,7 +828,16 @@ Item {
             const widgets = BarWidgetService.getRegisteredWidgetIds();
             if (widgets.length === 0)
                 return "No widgets registered";
-            return widgets.join("\n");
+
+            const lines = [];
+            for (const widgetId of widgets) {
+                const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+                let state = "";
+                if (widget?.effectiveVisible !== undefined)
+                    state = widget.effectiveVisible ? " [visible]" : " [hidden]";
+                lines.push(widgetId + state);
+            }
+            return lines.join("\n");
         }
 
         function status(widgetId: string): string {
@@ -804,6 +854,76 @@ Item {
             if (widget.popoutTarget?.shouldBeVisible)
                 return "visible";
             return "hidden";
+        }
+
+        function reveal(widgetId: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+
+            if (typeof widget.setVisibilityOverride === "function") {
+                widget.setVisibilityOverride(true);
+                return `WIDGET_REVEAL_SUCCESS: ${widgetId}`;
+            }
+            return `WIDGET_REVEAL_NOT_SUPPORTED: ${widgetId}`;
+        }
+
+        function hide(widgetId: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+
+            if (typeof widget.setVisibilityOverride === "function") {
+                widget.setVisibilityOverride(false);
+                return `WIDGET_HIDE_SUCCESS: ${widgetId}`;
+            }
+            return `WIDGET_HIDE_NOT_SUPPORTED: ${widgetId}`;
+        }
+
+        function reset(widgetId: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+
+            if (typeof widget.clearVisibilityOverride === "function") {
+                widget.clearVisibilityOverride();
+                return `WIDGET_RESET_SUCCESS: ${widgetId}`;
+            }
+            return `WIDGET_RESET_NOT_SUPPORTED: ${widgetId}`;
+        }
+
+        function visibility(widgetId: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+
+            if (widget.effectiveVisible !== undefined)
+                return widget.effectiveVisible ? "visible" : "hidden";
+            return "unknown";
         }
 
         target: "widget"
@@ -844,6 +964,17 @@ Item {
 
             const success = PluginService.disablePlugin(pluginId);
             return success ? `PLUGIN_DISABLE_SUCCESS: ${pluginId}` : `PLUGIN_DISABLE_FAILED: ${pluginId}`;
+        }
+
+        function toggle(pluginId: string): string {
+            if (!pluginId)
+                return "ERROR: No plugin ID specified";
+
+            if (!PluginService.availablePlugins[pluginId])
+                return `PLUGIN_NOT_FOUND: ${pluginId}`;
+
+            const success = PluginService.togglePlugin(pluginId);
+            return success ? `PLUGIN_TOGGLE_SUCCESS: ${pluginId}` : `PLUGIN_TOGGLE_FAILED: ${pluginId}`;
         }
 
         function list(): string {
@@ -949,7 +1080,7 @@ Item {
             const instances = SettingsData.desktopWidgetInstances || [];
             if (instances.length === 0)
                 return "No desktop widgets configured";
-            return instances.map(i => `${i.id} [${i.widgetType}] ${i.name || i.widgetType}`).join("\n");
+            return instances.map(i => `${i.id} [${i.widgetType}] ${i.name || i.widgetType} ${i.enabled ? "[enabled]" : "[disabled]"}`).join("\n");
         }
 
         function status(instanceId: string): string {
@@ -960,9 +1091,115 @@ Item {
             if (!instance)
                 return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
 
+            const enabled = instance.enabled ?? true;
             const overlay = instance.config?.showOnOverlay ?? false;
             const overview = instance.config?.showOnOverview ?? false;
-            return `overlay: ${overlay}, overview: ${overview}`;
+            const clickThrough = instance.config?.clickThrough ?? false;
+            const syncPosition = instance.config?.syncPositionAcrossScreens ?? false;
+            return `enabled: ${enabled}, overlay: ${overlay}, overview: ${overview}, clickThrough: ${clickThrough}, syncPosition: ${syncPosition}`;
+        }
+
+        function enable(instanceId: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            SettingsData.updateDesktopWidgetInstance(instanceId, {
+                enabled: true
+            });
+            return `DESKTOP_WIDGET_ENABLED: ${instanceId}`;
+        }
+
+        function disable(instanceId: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            SettingsData.updateDesktopWidgetInstance(instanceId, {
+                enabled: false
+            });
+            return `DESKTOP_WIDGET_DISABLED: ${instanceId}`;
+        }
+
+        function toggleEnabled(instanceId: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const currentValue = instance.enabled ?? true;
+            SettingsData.updateDesktopWidgetInstance(instanceId, {
+                enabled: !currentValue
+            });
+            return !currentValue ? `DESKTOP_WIDGET_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_DISABLED: ${instanceId}`;
+        }
+
+        function toggleClickThrough(instanceId: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const currentValue = instance.config?.clickThrough ?? false;
+            SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                clickThrough: !currentValue
+            });
+            return !currentValue ? `DESKTOP_WIDGET_CLICK_THROUGH_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_CLICK_THROUGH_DISABLED: ${instanceId}`;
+        }
+
+        function setClickThrough(instanceId: string, enabled: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const enabledBool = enabled === "true" || enabled === "1";
+            SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                clickThrough: enabledBool
+            });
+            return enabledBool ? `DESKTOP_WIDGET_CLICK_THROUGH_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_CLICK_THROUGH_DISABLED: ${instanceId}`;
+        }
+
+        function toggleSyncPosition(instanceId: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const currentValue = instance.config?.syncPositionAcrossScreens ?? false;
+            SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                syncPositionAcrossScreens: !currentValue
+            });
+            return !currentValue ? `DESKTOP_WIDGET_SYNC_POSITION_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_SYNC_POSITION_DISABLED: ${instanceId}`;
+        }
+
+        function setSyncPosition(instanceId: string, enabled: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const enabledBool = enabled === "true" || enabled === "1";
+            SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                syncPositionAcrossScreens: enabledBool
+            });
+            return enabledBool ? `DESKTOP_WIDGET_SYNC_POSITION_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_SYNC_POSITION_DISABLED: ${instanceId}`;
         }
 
         target: "desktopWidget"

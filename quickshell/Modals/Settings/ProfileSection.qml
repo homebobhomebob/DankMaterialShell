@@ -74,9 +74,7 @@ Rectangle {
                                 if (root.parentModal) {
                                     root.parentModal.allowFocusOverride = true;
                                     root.parentModal.shouldHaveFocus = false;
-                                    if (root.parentModal.profileBrowser) {
-                                        root.parentModal.profileBrowser.open();
-                                    }
+                                    root.parentModal.openProfileBrowser();
                                 }
                             }
                         }
@@ -130,6 +128,7 @@ Rectangle {
                 color: Theme.surfaceText
                 elide: Text.ElideRight
                 width: parent.width
+                horizontalAlignment: Text.AlignLeft
             }
 
             StyledText {
@@ -138,6 +137,7 @@ Rectangle {
                 color: Theme.surfaceVariantText
                 elide: Text.ElideRight
                 width: parent.width
+                horizontalAlignment: Text.AlignLeft
             }
         }
     }

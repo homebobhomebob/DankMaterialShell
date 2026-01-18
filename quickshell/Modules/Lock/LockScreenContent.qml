@@ -14,6 +14,12 @@ import qs.Widgets
 Item {
     id: root
 
+    function encodeFileUrl(path) {
+        if (!path)
+            return "";
+        return "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/');
+    }
+
     property string passwordBuffer: ""
     property bool demoMode: false
     property string screenName: ""
@@ -27,6 +33,13 @@ Item {
     property bool lockerReadyArmed: false
 
     signal unlockRequested
+
+    function resetLockState() {
+        lockerReadySent = false;
+        lockerReadyArmed = true;
+        unlocking = false;
+        pamState = "";
+    }
 
     function pickRandomFact() {
         randomFact = Facts.getRandomFact();
@@ -170,7 +183,7 @@ Item {
         anchors.fill: parent
         source: {
             var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
-            return (currentWallpaper && !currentWallpaper.startsWith("#")) ? currentWallpaper : "";
+            return (currentWallpaper && !currentWallpaper.startsWith("#")) ? encodeFileUrl(currentWallpaper) : "";
         }
         fillMode: Theme.getFillMode(SettingsData.wallpaperFillMode)
         smooth: true
@@ -659,14 +672,10 @@ Item {
                     Layout.preferredWidth: 60
                     Layout.preferredHeight: 60
                     imageSource: {
-                        if (PortalService.profileImage === "") {
+                        if (PortalService.profileImage === "")
                             return "";
-                        }
-
-                        if (PortalService.profileImage.startsWith("/")) {
-                            return "file://" + PortalService.profileImage;
-                        }
-
+                        if (PortalService.profileImage.startsWith("/"))
+                            return encodeFileUrl(PortalService.profileImage);
                         return PortalService.profileImage;
                     }
                     fallbackIcon: "person"
@@ -1396,6 +1405,14 @@ Item {
                 spacing: Theme.spacingM
                 anchors.verticalCenter: parent.verticalCenter
                 visible: NetworkService.networkAvailable || (BluetoothService.available && BluetoothService.enabled) || (AudioService.sink && AudioService.sink.audio)
+
+                DankIcon {
+                    name: "screen_record"
+                    size: Theme.iconSize - 2
+                    color: NiriService.hasActiveCast ? "white" : Qt.rgba(255, 255, 255, 0.5)
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: NiriService.hasCasts
+                }
 
                 DankIcon {
                     name: {

@@ -1,10 +1,14 @@
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.Widgets
 
 FocusScope {
     id: pluginsTab
+
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
 
     property string expandedPluginId: ""
     property bool isRefreshingPlugins: false
@@ -61,18 +65,23 @@ FocusScope {
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Theme.spacingXS
+                            width: parent.width - Theme.iconSize - Theme.spacingM
 
                             StyledText {
                                 text: I18n.tr("Plugin Management")
                                 font.pixelSize: Theme.fontSizeLarge
                                 color: Theme.surfaceText
                                 font.weight: Font.Medium
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             StyledText {
                                 text: I18n.tr("Manage and configure plugins for extending DMS functionality")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
                     }
@@ -117,6 +126,7 @@ FocusScope {
                                 color: Theme.surfaceVariantText
                                 wrapMode: Text.WordWrap
                                 width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
                     }
@@ -169,6 +179,7 @@ FocusScope {
                                 color: Theme.surfaceVariantText
                                 wrapMode: Text.WordWrap
                                 width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
@@ -199,7 +210,7 @@ FocusScope {
                             iconName: "store"
                             enabled: DMSService.dmsAvailable
                             onClicked: {
-                                pluginBrowser.show();
+                                showPluginBrowser();
                             }
                         }
 
@@ -247,6 +258,8 @@ FocusScope {
                         font.pixelSize: Theme.fontSizeLarge
                         color: Theme.surfaceText
                         font.weight: Font.Medium
+                        width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
 
                     StyledText {
@@ -254,6 +267,8 @@ FocusScope {
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         font.family: "monospace"
+                        width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
 
                     StyledText {
@@ -262,6 +277,7 @@ FocusScope {
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap
                         width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
                 }
             }
@@ -285,6 +301,8 @@ FocusScope {
                         font.pixelSize: Theme.fontSizeLarge
                         color: Theme.surfaceText
                         font.weight: Font.Medium
+                        width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
 
                     Column {
@@ -352,14 +370,24 @@ FocusScope {
             }
             refreshPluginList();
         }
+        function onPluginDataChanged(pluginId) {
+            var plugin = PluginService.availablePlugins[pluginId];
+            if (!plugin || !PluginService.isPluginLoaded(pluginId))
+                return;
+            var isLauncher = plugin.type === "launcher" || (plugin.capabilities && plugin.capabilities.includes("launcher"));
+            if (isLauncher)
+                PluginService.reloadPlugin(pluginId);
+        }
     }
 
     Connections {
         target: DMSService
         function onPluginsListReceived(plugins) {
-            pluginBrowser.isLoading = false;
-            pluginBrowser.allPlugins = plugins;
-            pluginBrowser.updateFilteredPlugins();
+            if (!pluginBrowserLoader.item)
+                return;
+            pluginBrowserLoader.item.isLoading = false;
+            pluginBrowserLoader.item.allPlugins = plugins;
+            pluginBrowserLoader.item.updateFilteredPlugins();
         }
         function onInstalledPluginsReceived(plugins) {
             var pluginMap = {};
@@ -385,22 +413,36 @@ FocusScope {
     }
 
     Component.onCompleted: {
-        pluginBrowser.parentModal = pluginsTab.parentModal;
         if (DMSService.dmsAvailable && DMSService.apiVersion >= 8)
             DMSService.listInstalled();
         if (PopoutService.pendingPluginInstall)
-            Qt.callLater(() => pluginBrowser.show());
+            Qt.callLater(showPluginBrowser);
     }
 
     Connections {
         target: PopoutService
         function onPendingPluginInstallChanged() {
             if (PopoutService.pendingPluginInstall)
-                pluginBrowser.show();
+                showPluginBrowser();
         }
     }
 
-    PluginBrowser {
-        id: pluginBrowser
+    LazyLoader {
+        id: pluginBrowserLoader
+        active: false
+
+        PluginBrowser {
+            id: pluginBrowserItem
+
+            Component.onCompleted: {
+                pluginBrowserItem.parentModal = pluginsTab.parentModal;
+            }
+        }
+    }
+
+    function showPluginBrowser() {
+        pluginBrowserLoader.active = true;
+        if (pluginBrowserLoader.item)
+            pluginBrowserLoader.item.show();
     }
 }

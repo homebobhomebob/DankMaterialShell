@@ -546,7 +546,7 @@ Singleton {
         if (savePrefs && typeof SessionData !== "undefined" && !isGreeterMode)
             SessionData.setLightMode(light);
         if (!isGreeterMode) {
-            // Skip with matugen becuase, our script runner will do it.
+            // Skip with matugen because, our script runner will do it.
             if (!matugenAvailable) {
                 PortalService.setLightMode(light);
             }
@@ -904,7 +904,7 @@ Singleton {
         if (typeof SettingsData !== "undefined") {
             const skipTemplates = [];
             if (!SettingsData.runDmsMatugenTemplates) {
-                skipTemplates.push("gtk", "neovim", "niri", "qt5ct", "qt6ct", "firefox", "pywalfox", "zenbrowser", "vesktop", "equibop", "ghostty", "kitty", "foot", "alacritty", "wezterm", "dgop", "kcolorscheme", "vscode");
+                skipTemplates.push("gtk", "nvim", "niri", "qt5ct", "qt6ct", "firefox", "pywalfox", "zenbrowser", "vesktop", "equibop", "ghostty", "kitty", "foot", "alacritty", "wezterm", "dgop", "kcolorscheme", "vscode");
             } else {
                 if (!SettingsData.matugenTemplateGtk)
                     skipTemplates.push("gtk");

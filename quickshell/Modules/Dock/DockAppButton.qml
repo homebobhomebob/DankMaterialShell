@@ -49,6 +49,13 @@ Item {
             updateDesktopEntry();
         }
     }
+
+    Connections {
+        target: SettingsData
+        function onAppIdSubstitutionsChanged() {
+            updateDesktopEntry();
+        }
+    }
     property bool isWindowFocused: {
         if (!appData) {
             return false;
@@ -392,25 +399,11 @@ Item {
             }
         }
 
-        DankIcon {
-            anchors.centerIn: parent
-            size: actualIconSize
-            name: "sports_esports"
-            color: Theme.surfaceText
-            visible: {
-                if (!appData || !appData.appId || appData.appId === "__SEPARATOR__") {
-                    return false;
-                }
-                const moddedId = Paths.moddedAppId(appData.appId);
-                return moddedId.toLowerCase().includes("steam_app");
-            }
-        }
-
         Rectangle {
             width: actualIconSize
             height: actualIconSize
             anchors.centerIn: parent
-            visible: iconImg.status !== Image.Ready
+            visible: iconImg.status !== Image.Ready && appData && appData.appId && !Paths.isSteamApp(appData.appId)
             color: Theme.surfaceLight
             radius: Theme.cornerRadius
             border.width: 1
@@ -430,6 +423,14 @@ Item {
                 color: Theme.primary
                 font.weight: Font.Bold
             }
+        }
+
+        DankIcon {
+            anchors.centerIn: parent
+            size: actualIconSize
+            name: "sports_esports"
+            color: Theme.surfaceText
+            visible: iconImg.status !== Image.Ready && appData && appData.appId && Paths.isSteamApp(appData.appId)
         }
 
         Loader {

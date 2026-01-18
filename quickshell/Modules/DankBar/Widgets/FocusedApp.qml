@@ -56,6 +56,13 @@ BasePill {
         }
     }
 
+    Connections {
+        target: SettingsData
+        function onAppIdSubstitutionsChanged() {
+            root.updateDesktopEntry();
+        }
+    }
+
     function updateDesktopEntry() {
         if (activeWindow && activeWindow.appId) {
             const moddedId = Paths.moddedAppId(activeWindow.appId);
@@ -153,24 +160,12 @@ BasePill {
                 size: 18
                 name: "sports_esports"
                 color: Theme.widgetTextColor
-                visible: {
-                    if (!root.isVerticalOrientation || !activeWindow || !activeWindow.appId)
-                        return false;
-                    const moddedId = Paths.moddedAppId(activeWindow.appId);
-                    return moddedId.toLowerCase().includes("steam_app");
-                }
+                visible: root.isVerticalOrientation && activeWindow && activeWindow.appId && appIcon.status !== Image.Ready && Paths.isSteamApp(activeWindow.appId)
             }
 
             Text {
                 anchors.centerIn: parent
-                visible: {
-                    if (!root.isVerticalOrientation || !activeWindow || !activeWindow.appId)
-                        return false;
-                    if (appIcon.status === Image.Ready)
-                        return false;
-                    const moddedId = Paths.moddedAppId(activeWindow.appId);
-                    return !moddedId.toLowerCase().includes("steam_app");
-                }
+                visible: root.isVerticalOrientation && activeWindow && activeWindow.appId && appIcon.status !== Image.Ready && !Paths.isSteamApp(activeWindow.appId)
                 text: {
                     if (!activeWindow || !activeWindow.appId)
                         return "?";

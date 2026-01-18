@@ -8,8 +8,26 @@ import qs.Widgets
 FloatingWindow {
     id: settingsModal
 
-    property alias profileBrowser: profileBrowser
-    property alias wallpaperBrowser: wallpaperBrowser
+    property var profileBrowser: profileBrowserLoader.item
+    property var wallpaperBrowser: wallpaperBrowserLoader.item
+
+    function openProfileBrowser(allowStacking) {
+        profileBrowserLoader.active = true;
+        if (!profileBrowserLoader.item)
+            return;
+        if (allowStacking !== undefined)
+            profileBrowserLoader.item.allowStacking = allowStacking;
+        profileBrowserLoader.item.open();
+    }
+
+    function openWallpaperBrowser(allowStacking) {
+        wallpaperBrowserLoader.active = true;
+        if (!wallpaperBrowserLoader.item)
+            return;
+        if (allowStacking !== undefined)
+            wallpaperBrowserLoader.item.allowStacking = allowStacking;
+        wallpaperBrowserLoader.item.open();
+    }
     property alias sidebar: sidebar
     property int currentTabIndex: 0
     property bool shouldHaveFocus: visible
@@ -34,15 +52,19 @@ FloatingWindow {
     }
 
     function showWithTab(tabIndex: int) {
-        if (tabIndex >= 0)
+        if (tabIndex >= 0) {
             currentTabIndex = tabIndex;
+            sidebar.autoExpandForTab(tabIndex);
+        }
         visible = true;
     }
 
     function showWithTabName(tabName: string) {
         var idx = sidebar.resolveTabIndex(tabName);
-        if (idx >= 0)
+        if (idx >= 0) {
             currentTabIndex = idx;
+            sidebar.autoExpandForTab(idx);
+        }
         visible = true;
     }
 
@@ -92,41 +114,51 @@ FloatingWindow {
         }
     }
 
-    FileBrowserModal {
-        id: profileBrowser
+    LazyLoader {
+        id: profileBrowserLoader
+        active: false
 
-        allowStacking: true
-        parentModal: settingsModal
-        browserTitle: I18n.tr("Select Profile Image", "profile image file browser title")
-        browserIcon: "person"
-        browserType: "profile"
-        showHiddenFiles: true
-        fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
-        onFileSelected: path => {
-            PortalService.setProfileImage(path);
-            close();
-        }
-        onDialogClosed: () => {
-            allowStacking = true;
+        FileBrowserModal {
+            id: profileBrowserItem
+
+            allowStacking: true
+            parentModal: settingsModal
+            browserTitle: I18n.tr("Select Profile Image", "profile image file browser title")
+            browserIcon: "person"
+            browserType: "profile"
+            showHiddenFiles: true
+            fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
+            onFileSelected: path => {
+                PortalService.setProfileImage(path);
+                close();
+            }
+            onDialogClosed: () => {
+                allowStacking = true;
+            }
         }
     }
 
-    FileBrowserModal {
-        id: wallpaperBrowser
+    LazyLoader {
+        id: wallpaperBrowserLoader
+        active: false
 
-        allowStacking: true
-        parentModal: settingsModal
-        browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
-        browserIcon: "wallpaper"
-        browserType: "wallpaper"
-        showHiddenFiles: true
-        fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
-        onFileSelected: path => {
-            SessionData.setWallpaper(path);
-            close();
-        }
-        onDialogClosed: () => {
-            allowStacking = true;
+        FileBrowserModal {
+            id: wallpaperBrowserItem
+
+            allowStacking: true
+            parentModal: settingsModal
+            browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
+            browserIcon: "wallpaper"
+            browserType: "wallpaper"
+            showHiddenFiles: true
+            fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
+            onFileSelected: path => {
+                SessionData.setWallpaper(path);
+                close();
+            }
+            onDialogClosed: () => {
+                allowStacking = true;
+            }
         }
     }
 
@@ -315,8 +347,8 @@ FloatingWindow {
                     visible: settingsModal.isCompactMode ? settingsModal.menuVisible : true
                     parentModal: settingsModal
                     currentIndex: settingsModal.currentTabIndex
-                    onCurrentIndexChanged: {
-                        settingsModal.currentTabIndex = currentIndex;
+                    onTabChangeRequested: tabIndex => {
+                        settingsModal.currentTabIndex = tabIndex;
                         if (settingsModal.isCompactMode) {
                             settingsModal.enableAnimations = true;
                             settingsModal.menuVisible = false;

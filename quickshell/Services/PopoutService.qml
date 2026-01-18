@@ -27,7 +27,9 @@ Singleton {
     property var colorPickerModal: null
     property var notificationModal: null
     property var wifiPasswordModal: null
+    property var wifiPasswordModalLoader: null
     property var polkitAuthModal: null
+    property var polkitAuthModalLoader: null
     property var bluetoothPairingModal: null
     property var networkInfoModal: null
 
@@ -415,8 +417,18 @@ Singleton {
         notificationModal?.close();
     }
 
-    function showWifiPasswordModal() {
-        wifiPasswordModal?.show();
+    function showWifiPasswordModal(ssid) {
+        if (wifiPasswordModalLoader)
+            wifiPasswordModalLoader.active = true;
+        if (wifiPasswordModal)
+            wifiPasswordModal.show(ssid);
+    }
+
+    function showHiddenNetworkModal() {
+        if (wifiPasswordModalLoader)
+            wifiPasswordModalLoader.active = true;
+        if (wifiPasswordModal)
+            wifiPasswordModal.showHidden();
     }
 
     function hideWifiPasswordModal() {

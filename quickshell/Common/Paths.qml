@@ -45,20 +45,28 @@ Singleton {
         Quickshell.execDetached(["cp", strip(from), strip(to)]);
     }
 
+    function isSteamApp(appId: string): bool {
+        return appId && /^steam_app_\d+$/.test(appId);
+    }
+
     function moddedAppId(appId: string): string {
-        if (appId === "Spotify")
-            return "spotify";
-        if (appId === "beepertexts")
-            return "beeper";
-        if (appId === "home assistant desktop")
-            return "homeassistant-desktop";
-        if (appId.includes("com.transmissionbt.transmission")) {
-            if (DesktopEntries.heuristicLookup("transmission-gtk"))
-                return "transmission-gtk";
-            if (DesktopEntries.heuristicLookup("transmission"))
-                return "transmission";
-            return "transmission-gtk";
+        const subs = SettingsData.appIdSubstitutions || [];
+        for (let i = 0; i < subs.length; i++) {
+            const sub = subs[i];
+            if (sub.type === "exact" && appId === sub.pattern) {
+                return sub.replacement;
+            } else if (sub.type === "contains" && appId.includes(sub.pattern)) {
+                return sub.replacement;
+            } else if (sub.type === "regex") {
+                const match = appId.match(new RegExp(sub.pattern));
+                if (match) {
+                    return sub.replacement.replace(/\$(\d+)/g, (_, n) => match[n] || "");
+                }
+            }
         }
+        const steamMatch = appId.match(/^steam_app_(\d+)$/);
+        if (steamMatch)
+            return `steam_icon_${steamMatch[1]}`;
         return appId;
     }
 
@@ -68,8 +76,8 @@ Singleton {
         }
 
         const moddedId = moddedAppId(appId);
-        if (moddedId.toLowerCase().includes("steam_app")) {
-            return "";
+        if (moddedId !== appId) {
+            return Quickshell.iconPath(moddedId, true);
         }
 
         return desktopEntry && desktopEntry.icon ? Quickshell.iconPath(desktopEntry.icon, true) : "";

@@ -20,6 +20,12 @@
   "%1 display(s)": {
     "%1 display(s)": "%1 ekran"
   },
+  "%1 exists but is not included in config. Custom keybinds will not work until this is fixed.": {
+    "%1 exists but is not included in config. Custom keybinds will not work until this is fixed.": ""
+  },
+  "%1 is now included in config": {
+    "%1 is now included in config": ""
+  },
   "%1 job(s)": {
     "%1 job(s)": "%1 iş"
   },
@@ -164,6 +170,9 @@
   "Activate": {
     "Activate": "Etkinleştir"
   },
+  "Activation": {
+    "Activation": ""
+  },
   "Active": {
     "Active": "Etkin"
   },
@@ -230,8 +239,14 @@
   "All displays": {
     "All displays": "Tüm ekranlar"
   },
+  "Allow clicks to pass through the widget": {
+    "Allow clicks to pass through the widget": ""
+  },
   "Alt+←/Backspace: Back • F1/I: File Info • F10: Help • Esc: Close": {
     "Alt+←/Backspace: Back • F1/I: File Info • F10: Help • Esc: Close": "Alt+←/Backspace: Geri • F1/I: Dosya bilgisi • F10: Yardım • Esc: Kapat"
+  },
+  "Always Active": {
+    "Always Active": ""
   },
   "Always Show Percentage": {
     "Always Show Percentage": "Yüzdeyi Her Zaman Göster"
@@ -262,6 +277,9 @@
   },
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "Anonim Kimlik (isteğe bağlı)"
+  },
+  "App ID Substitutions": {
+    "App ID Substitutions": ""
   },
   "App Launcher": {
     "App Launcher": "Uygulama Başlatıcı"
@@ -364,6 +382,9 @@
   },
   "Auto-Clear After": {
     "Auto-Clear After": "Sonra Otomatik Sil"
+  },
+  "Auto-Hide Timeout": {
+    "Auto-Hide Timeout": ""
   },
   "Auto-close Niri overview when launching apps.": {
     "Auto-close Niri overview when launching apps.": "Uygulamaları başlatınca Niri genel görünümünü otomatik kapat."
@@ -692,6 +713,12 @@
   "Clear at Startup": {
     "Clear at Startup": "Başlangıçta Temizle"
   },
+  "Click 'Setup' to create %1 and add include to config.": {
+    "Click 'Setup' to create %1 and add include to config.": ""
+  },
+  "Click 'Setup' to create cursor config and add include to your compositor config.": {
+    "Click 'Setup' to create cursor config and add include to your compositor config.": ""
+  },
   "Click 'Setup' to create dms/binds.kdl and add include to config.kdl.": {
     "Click 'Setup' to create dms/binds.kdl and add include to config.kdl.": "dms/binds.kdl dosyasını oluşturmak ve config.kdl dosyasına eklemek için 'Kur' düğmesine tıklayın."
   },
@@ -700,6 +727,12 @@
   },
   "Click Import to add a .ovpn or .conf": {
     "Click Import to add a .ovpn or .conf": ".ovpn veya .conf dosyası eklemek için İçe Aktar'ı tıklayın."
+  },
+  "Click Through": {
+    "Click Through": ""
+  },
+  "Click any shortcut to edit. Changes save to %1": {
+    "Click any shortcut to edit. Changes save to %1": ""
   },
   "Click any shortcut to edit. Changes save to dms/binds.kdl": {
     "Click any shortcut to edit. Changes save to dms/binds.kdl": "Düzenlemek için herhangi bir kısayola tıklayın. Değişiklikler dms/binds.kdl dosyasına kaydedilir."
@@ -836,6 +869,9 @@
   "Connect": {
     "Connect": "Bağlan"
   },
+  "Connect to Hidden Network": {
+    "Connect to Hidden Network": ""
+  },
   "Connect to VPN": {
     "Connect to VPN": "VPN'e Bağlan"
   },
@@ -877,6 +913,9 @@
   },
   "Copied!": {
     "Copied!": "Kopyalandı!"
+  },
+  "Copy": {
+    "Copy": ""
   },
   "Copy PID": {
     "Copy PID": "PID'i Kopyala"
@@ -931,6 +970,18 @@
   },
   "Current: %1": {
     "Current: %1": "Mevcut: %1"
+  },
+  "Cursor Config Not Configured": {
+    "Cursor Config Not Configured": ""
+  },
+  "Cursor Include Missing": {
+    "Cursor Include Missing": ""
+  },
+  "Cursor Size": {
+    "Cursor Size": ""
+  },
+  "Cursor Theme": {
+    "Cursor Theme": ""
   },
   "Custom": {
     "Custom": "Özel"
@@ -1376,6 +1427,9 @@
   "Enter launch prefix (e.g., 'uwsm-app')": {
     "Enter launch prefix (e.g., 'uwsm-app')": "Başlatma önekini girin (örneğin, 'uwsm-app')"
   },
+  "Enter network name and password": {
+    "Enter network name and password": ""
+  },
   "Enter passkey for ": {
     "Enter passkey for ": "Şunun için şifre gir: "
   },
@@ -1607,6 +1661,9 @@
   "Fixing...": {
     "Fixing...": "Düzeltiliyor..."
   },
+  "Flags": {
+    "Flags": ""
+  },
   "Flipped": {
     "Flipped": "Döndürülmüş"
   },
@@ -1622,8 +1679,17 @@
   "Focus at Startup": {
     "Focus at Startup": "Başlangıçta Odakla"
   },
+  "Focused Border": {
+    "Focused Border": ""
+  },
+  "Focused Color": {
+    "Focused Color": ""
+  },
   "Focused Window": {
     "Focused Window": "Odaklanılmış Pencere"
+  },
+  "Follow Monitor Focus": {
+    "Follow Monitor Focus": ""
   },
   "Follow focus": {
     "Follow focus": "Odağı takip et"
@@ -1730,6 +1796,9 @@
   "Grid Columns": {
     "Grid Columns": "Izgara Sütunları"
   },
+  "Group": {
+    "Group": ""
+  },
   "Group Workspace Apps": {
     "Group Workspace Apps": ""
   },
@@ -1739,8 +1808,14 @@
   "Group multiple windows of the same app together with a window count indicator": {
     "Group multiple windows of the same app together with a window count indicator": "Aynı uygulamanın birden fazla penceresini pencere sayısı göstergesi ile gruplayın"
   },
+  "Group removed": {
+    "Group removed": ""
+  },
   "Group repeated application icons in unfocused workspaces": {
     "Group repeated application icons in unfocused workspaces": ""
+  },
+  "Groups": {
+    "Groups": ""
   },
   "HDR (EDID)": {
     "HDR (EDID)": "HDR (EDID)"
@@ -1769,11 +1844,32 @@
   "Hibernate": {
     "Hibernate": "Hazırda Beklet"
   },
+  "Hidden": {
+    "Hidden": ""
+  },
+  "Hidden Network": {
+    "Hidden Network": ""
+  },
   "Hide Delay": {
     "Hide Delay": "Gizleme Gecikmesi"
   },
+  "Hide When Typing": {
+    "Hide When Typing": ""
+  },
   "Hide When Windows Open": {
     "Hide When Windows Open": "Pencere Açıkken Gizle"
+  },
+  "Hide cursor after inactivity (0 = disabled)": {
+    "Hide cursor after inactivity (0 = disabled)": ""
+  },
+  "Hide cursor when pressing keyboard keys": {
+    "Hide cursor when pressing keyboard keys": ""
+  },
+  "Hide cursor when using touch input": {
+    "Hide cursor when using touch input": ""
+  },
+  "Hide on Touch": {
+    "Hide on Touch": ""
   },
   "Hide the dock when not in use and reveal it when hovering near the dock area": {
     "Hide the dock when not in use and reveal it when hovering near the dock area": "Kullanılmadığında dock'u gizle ve dock alanının yakınına geldiğinizde göster"
@@ -1937,6 +2033,15 @@
   "Key": {
     "Key": "Tuş"
   },
+  "Keybind Sources": {
+    "Keybind Sources": ""
+  },
+  "Keybinds Search Settings": {
+    "Keybinds Search Settings": ""
+  },
+  "Keybinds shown alongside regular search results": {
+    "Keybinds shown alongside regular search results": ""
+  },
   "Keyboard Layout Name": {
     "Keyboard Layout Name": "Klavye Düzeni Adı"
   },
@@ -2060,6 +2165,9 @@
   "Lock fade grace period": {
     "Lock fade grace period": ""
   },
+  "Locked": {
+    "Locked": ""
+  },
   "Log Out": {
     "Log Out": "Çıkış"
   },
@@ -2068,6 +2176,9 @@
   },
   "Long Text": {
     "Long Text": "Uzun Metin"
+  },
+  "Long press": {
+    "Long press": ""
   },
   "Longitude": {
     "Longitude": "Boylam"
@@ -2101,6 +2212,9 @@
   },
   "Manual Show/Hide": {
     "Manual Show/Hide": "Manuel Göster/Gizle"
+  },
+  "Map window class names to icon names for proper icon display": {
+    "Map window class names to icon names for proper icon display": ""
   },
   "Margin": {
     "Margin": "Kenar Boşluğu"
@@ -2255,6 +2369,12 @@
   "Mount": {
     "Mount": "Bağlı"
   },
+  "Mouse pointer appearance": {
+    "Mouse pointer appearance": ""
+  },
+  "Mouse pointer size in pixels": {
+    "Mouse pointer size in pixels": ""
+  },
   "Move Widget": {
     "Move Widget": "Widget Taşı"
   },
@@ -2288,6 +2408,9 @@
   "Network Information": {
     "Network Information": "Ağ Bilgisi"
   },
+  "Network Name (SSID)": {
+    "Network Name (SSID)": ""
+  },
   "Network Speed Monitor": {
     "Network Speed Monitor": "Ağ Hız Monitörü"
   },
@@ -2314,6 +2437,9 @@
   },
   "New York, NY": {
     "New York, NY": "New York, NY"
+  },
+  "New group name...": {
+    "New group name...": ""
   },
   "Next Transition": {
     "Next Transition": "Sonraki Geçiş"
@@ -2546,6 +2672,9 @@
   "Options": {
     "Options": "Seçenekler"
   },
+  "Organize widgets into collapsible groups": {
+    "Organize widgets into collapsible groups": ""
+  },
   "Other": {
     "Other": "Diğer"
   },
@@ -2617,6 +2746,9 @@
   },
   "Password": {
     "Password": "Parola"
+  },
+  "Pattern": {
+    "Pattern": ""
   },
   "Pause": {
     "Pause": "Duraklat"
@@ -2864,6 +2996,9 @@
   "Reject Jobs": {
     "Reject Jobs": "İşleri Reddet"
   },
+  "Release": {
+    "Release": ""
+  },
   "Reload Plugin": {
     "Reload Plugin": "Eklentiyi Yeniden Yükle"
   },
@@ -2872,6 +3007,12 @@
   },
   "Remove gaps and border when windows are maximized": {
     "Remove gaps and border when windows are maximized": "Pencereler ekranı kapladığında boşlukları ve kenarlıkları kaldır"
+  },
+  "Repeat": {
+    "Repeat": ""
+  },
+  "Replacement": {
+    "Replacement": ""
   },
   "Report": {
     "Report": "Rapor"
@@ -3038,6 +3179,9 @@
   "Scrolling": {
     "Scrolling": "Kaydırma"
   },
+  "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": {
+    "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": ""
+  },
   "Search file contents": {
     "Search file contents": "Dosya içeriklerini ara"
   },
@@ -3049,6 +3193,9 @@
   },
   "Search keybinds...": {
     "Search keybinds...": "Tuş kombinasyonları ara..."
+  },
+  "Search keyboard shortcuts from your compositor and applications": {
+    "Search keyboard shortcuts from your compositor and applications": ""
   },
   "Search plugins...": {
     "Search plugins...": "Eklentileri ara..."
@@ -3092,6 +3239,9 @@
   "Select an image file...": {
     "Select an image file...": "Bir resim dosyası seçin..."
   },
+  "Select at least one provider": {
+    "Select at least one provider": ""
+  },
   "Select device...": {
     "Select device...": "Aygıt seç..."
   },
@@ -3115,6 +3265,9 @@
   },
   "Select the palette algorithm used for wallpaper-based colors": {
     "Select the palette algorithm used for wallpaper-based colors": "Duvar kağıdı tabanlı renkler için kullanılan palet algoritmasını seçin"
+  },
+  "Select which keybind providers to include": {
+    "Select which keybind providers to include": ""
   },
   "Select which transitions to include in randomization": {
     "Select which transitions to include in randomization": "Rastgele seçime dahil edilecek geçişleri seçin"
@@ -3275,6 +3428,9 @@
   "Show all 9 tags instead of only occupied tags (DWL only)": {
     "Show all 9 tags instead of only occupied tags (DWL only)": "Sadece dolu etiketleri değil, tüm 9 etiketi göster (sadece DWL)"
   },
+  "Show an outline ring around the focused workspace indicator": {
+    "Show an outline ring around the focused workspace indicator": ""
+  },
   "Show cava audio visualizer in media widget": {
     "Show cava audio visualizer in media widget": "Medya widget'ında cava ses görselleştiricisini göster"
   },
@@ -3292,6 +3448,9 @@
   },
   "Show on Overview": {
     "Show on Overview": "Genel Görünümde Göster"
+  },
+  "Show on Overview Only": {
+    "Show on Overview Only": ""
   },
   "Show on all connected displays": {
     "Show on all connected displays": "Tüm bağlı ekranlarda göster"
@@ -3340,6 +3499,9 @@
   },
   "Show workspace name on horizontal bars, and first letter on vertical bars": {
     "Show workspace name on horizontal bars, and first letter on vertical bars": ""
+  },
+  "Show workspaces of the currently focused monitor": {
+    "Show workspaces of the currently focused monitor": ""
   },
   "Shows all running applications with focus indication": {
     "Shows all running applications with focus indication": "Odak göstergesiyle çalışan tüm uygulamaları gösterir"
@@ -3484,6 +3646,9 @@
   },
   "Sync Mode with Portal": {
     "Sync Mode with Portal": "Modu Portal ile Eşitle"
+  },
+  "Sync Position Across Screens": {
+    "Sync Position Across Screens": ""
   },
   "Sync dark mode with settings portals for system-wide theme hints": {
     "Sync dark mode with settings portals for system-wide theme hints": "Sistem genelindeki tema ipuçları için karanlık modu ayar portalları ile senkronize et"
@@ -3683,11 +3848,20 @@
   "Transparency": {
     "Transparency": "Transparanlık"
   },
+  "Trigger": {
+    "Trigger": ""
+  },
+  "Trigger Prefix": {
+    "Trigger Prefix": ""
+  },
   "Turn off monitors after": {
     "Turn off monitors after": "Şu zaman sonra monitörleri kapat"
   },
   "Type": {
     "Type": "Tip"
+  },
+  "Type this prefix to search keybinds": {
+    "Type this prefix to search keybinds": ""
   },
   "Typography": {
     "Typography": "Tipografi"
@@ -3697,6 +3871,12 @@
   },
   "Unavailable": {
     "Unavailable": "Mevcut Değil"
+  },
+  "Unfocused Color": {
+    "Unfocused Color": ""
+  },
+  "Ungrouped": {
+    "Ungrouped": ""
   },
   "Uninstall Plugin": {
     "Uninstall Plugin": "Eklentiyi Kaldır"
@@ -3715,6 +3895,9 @@
   },
   "Unknown Network": {
     "Unknown Network": "Bilinmeyen Ağ"
+  },
+  "Unpin": {
+    "Unpin": ""
   },
   "Unpin from Dock": {
     "Unpin from Dock": "Dock'tan Sabitlemeyi Kaldır"
@@ -3736,6 +3919,12 @@
   },
   "Update Plugin": {
     "Update Plugin": "Eklentiyi Güncelle"
+  },
+  "Urgent Color": {
+    "Urgent Color": ""
+  },
+  "Usage Tips": {
+    "Usage Tips": ""
   },
   "Use 24-hour time format instead of 12-hour AM/PM": {
     "Use 24-hour time format instead of 12-hour AM/PM": "12 saatlik ÖÖ/ÖS yerine 24 saatlik zaman formatını kullanın."
@@ -3788,8 +3977,17 @@
   "Use light theme instead of dark theme": {
     "Use light theme instead of dark theme": "Karanlık tema yerine aydınlık tema kullan"
   },
+  "Use smaller notification cards": {
+    "Use smaller notification cards": ""
+  },
   "Use sound theme from system settings": {
     "Use sound theme from system settings": "Sistem ayarlarındaki ses temasını kullan"
+  },
+  "Use the same position and size on all displays": {
+    "Use the same position and size on all displays": ""
+  },
+  "Use trigger prefix to activate": {
+    "Use trigger prefix to activate": ""
   },
   "Use%": {
     "Use%": "Kullan%"
@@ -4024,6 +4222,9 @@
   "Workspace": {
     "Workspace": "Çalışma Alanı"
   },
+  "Workspace Appearance": {
+    "Workspace Appearance": ""
+  },
   "Workspace Index Numbers": {
     "Workspace Index Numbers": "Çalışma Alanı Sıra Numarası"
   },
@@ -4072,6 +4273,9 @@
   "author attribution": {
     "by %1": "%1 tarafından"
   },
+  "bar shadow settings card": {
+    "Shadow": ""
+  },
   "browse themes button | theme browser header | theme browser window title": {
     "Browse Themes": "Temalara Göz At"
   },
@@ -4104,6 +4308,9 @@
   },
   "dms/binds.kdl is now included in config.kdl": {
     "dms/binds.kdl is now included in config.kdl": "dms/binds.kdl artık config.kdl dosyasına dahil edilmiştir."
+  },
+  "dms/cursor config exists but is not included. Cursor settings won't apply.": {
+    "dms/cursor config exists but is not included. Cursor settings won't apply.": ""
   },
   "dms/outputs config exists but is not included in your compositor config. Display changes won't persist.": {
     "dms/outputs config exists but is not included in your compositor config. Display changes won't persist.": "dms/outputs yapılandırması mevcut ancak kompozitör yapılandırmanıza dahil edilmemiş. Ekran değişiklikleri kalıcı olmayacaktır."
@@ -4204,7 +4411,8 @@
     "Modular widget bar": "",
     "Night mode & gamma": "",
     "Per-screen config": "",
-    "Quick system toggles": ""
+    "Quick system toggles": "",
+    "Security & privacy": ""
   },
   "greeter feature card title": {
     "App Theming": "",
@@ -4220,6 +4428,9 @@
   },
   "greeter feature card title | greeter settings link": {
     "DankBar": ""
+  },
+  "greeter feature card title | lock screen notifications settings card": {
+    "Lock Screen": ""
   },
   "greeter finish button": {
     "Finish": ""
@@ -4421,6 +4632,13 @@
   "settings_displays": {
     "Widgets": "Widgetlar"
   },
+  "shadow color option": {
+    "Surface": "",
+    "Text": ""
+  },
+  "shadow intensity slider": {
+    "Intensity": ""
+  },
   "source code link": {
     "source": "kaynak"
   },
@@ -4456,6 +4674,9 @@
   },
   "update dms for NM integration.": {
     "update dms for NM integration.": "NM entegrasyonu için dms'yi güncelle"
+  },
+  "version requirement": {
+    "Requires %1": ""
   },
   "wallpaper directory file browser title": {
     "Select Wallpaper Directory": "Duvar Kağıdı Dizinini Seç"

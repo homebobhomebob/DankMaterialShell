@@ -341,11 +341,11 @@ Singleton {
         };
     }
 
-    function formatTemp(celcius, includeUnits = true, unitsShort = true) {
-        if (celcius == null) {
+    function formatTemp(celsius, includeUnits = true, unitsShort = true) {
+        if (celsius == null) {
             return null;
         }
-        const value = SettingsData.useFahrenheit ? Math.round(celcius * (9 / 5) + 32) : celcius;
+        const value = SettingsData.useFahrenheit ? Math.round(celsius * (9 / 5) + 32) : celsius;
         const unit = unitsShort ? "°" : (SettingsData.useFahrenheit ? "°F" : "°C");
         return includeUnits ? value + unit : value;
     }
@@ -745,6 +745,7 @@ Singleton {
 
                             hourly_forecast.push({
                                 "time": formatTime(hourly.time[i]),
+                                "rawTime": hourly.time[i],
                                 "temp": Math.round(tempC),
                                 "tempF": Math.round(tempF),
                                 "feelsLike": Math.round(feelsLikeC),
@@ -753,7 +754,7 @@ Singleton {
                                 "humidity": Math.round(hourly.relative_humidity_2m?.[i] || 0),
                                 "wind": Math.round(hourly.wind_speed_10m?.[i] || 0),
                                 "pressure": Math.round(hourly.surface_pressure?.[i] || 0),
-                                "precipitationProbability": Math.round(hourly.precipitation_probability_max?.[0] || 0),
+                                "precipitationProbability": Math.round(hourly.precipitation_probability?.[i] || 0),
                                 "visibility": Math.round(hourly.visibility?.[i] || 0),
                                 "isDay": isDay
                             });
@@ -778,7 +779,9 @@ Singleton {
                                 "tempMaxF": Math.round(tempMaxF),
                                 "precipitationProbability": Math.round(daily.precipitation_probability_max?.[i] || 0),
                                 "sunrise": daily.sunrise?.[i] ? formatTime(daily.sunrise[i]) : "",
-                                "sunset": daily.sunset?.[i] ? formatTime(daily.sunset[i]) : ""
+                                "sunset": daily.sunset?.[i] ? formatTime(daily.sunset[i]) : "",
+                                "rawSunrise": daily.sunrise?.[i] || "",
+                                "rawSunset": daily.sunset?.[i] || ""
                             });
                         }
                     }
@@ -805,6 +808,8 @@ Singleton {
                         "wind": Math.round(current.wind_speed_10m || 0) + " " + (currentUnits.wind_speed_10m || 'm/s'),
                         "sunrise": formatTime(daily.sunrise?.[0]) || "06:00",
                         "sunset": formatTime(daily.sunset?.[0]) || "18:00",
+                        "rawSunrise": daily.sunrise?.[0] || "",
+                        "rawSunset": daily.sunset?.[0] || "",
                         "uv": 0,
                         "pressure": Math.round(current.surface_pressure || 0),
                         "precipitationProbability": Math.round(daily.precipitation_probability_max?.[0] || 0),

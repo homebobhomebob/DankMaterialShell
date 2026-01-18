@@ -61,11 +61,13 @@
               (builtins.substring 6 2 longDate)
             ];
           version =
-            pkgs.lib.removePrefix "v" (pkgs.lib.trim (builtins.readFile ./quickshell/VERSION))
-            + "+date="
-            + mkDate (self.lastModifiedDate or "19700101")
-            + "_"
-            + (self.shortRev or "dirty");
+            let
+              rawVersion = pkgs.lib.removePrefix "v" (pkgs.lib.trim (builtins.readFile ./quickshell/VERSION));
+              cleanVersion = builtins.replaceStrings [ " " ] [ "" ] rawVersion;
+              dateSuffix = "+date=" + mkDate (self.lastModifiedDate or "19700101");
+              revSuffix = "_" + (self.shortRev or "dirty");
+            in
+            "${cleanVersion}${dateSuffix}${revSuffix}";
         in
         {
           dms-shell = pkgs.buildGoModule (
@@ -76,14 +78,14 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-DINaA5LCOWoxBIewuc39Rnwj6NdZoET7Q++B11Qg5rI=";
+              vendorHash = "sha256-lXqOJ0yNlOcXuR3vcuVjFI02Hskmavcasb1Ntf3UlPM=";
 
               subPackages = [ "cmd/dms" ];
 
               ldflags = [
                 "-s"
                 "-w"
-                "-X main.Version=${version}"
+                "-X 'main.Version=${version}'"
               ];
 
               nativeBuildInputs = with pkgs; [

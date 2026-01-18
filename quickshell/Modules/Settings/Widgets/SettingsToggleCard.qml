@@ -7,6 +7,9 @@ import qs.Widgets
 StyledRect {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     property string tab: ""
     property var tags: []
 
@@ -48,6 +51,7 @@ StyledRect {
 
                 Row {
                     spacing: Theme.spacingM
+                    width: parent.width
 
                     DankIcon {
                         id: headerIcon
@@ -66,6 +70,8 @@ StyledRect {
                         color: Theme.surfaceText
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.title !== ""
+                        width: parent.width - (headerIcon.visible ? headerIcon.width + parent.spacing : 0)
+                        horizontalAlignment: Text.AlignLeft
                     }
                 }
 
@@ -76,6 +82,7 @@ StyledRect {
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
                     width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                     visible: root.description !== ""
                 }
             }

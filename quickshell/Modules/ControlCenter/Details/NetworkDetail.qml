@@ -9,6 +9,9 @@ import qs.Modals
 Rectangle {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     implicitHeight: {
         if (height > 0) {
             return height;
@@ -34,6 +37,10 @@ Rectangle {
         NetworkService.removeRef();
     }
 
+    property bool hasEthernetAvailable: (NetworkService.ethernetDevices?.length ?? 0) > 0
+    property bool hasWifiAvailable: (NetworkService.wifiDevices?.length ?? 0) > 0
+    property bool hasBothConnectionTypes: hasEthernetAvailable && hasWifiAvailable
+
     property int currentPreferenceIndex: {
         if (DMSService.apiVersion < 5) {
             return 1;
@@ -43,19 +50,24 @@ Rectangle {
             return 1;
         }
 
-        const pref = NetworkService.userPreference;
-        const status = NetworkService.networkStatus;
-        let index = 1;
-
-        if (pref === "ethernet") {
-            index = 0;
-        } else if (pref === "wifi") {
-            index = 1;
-        } else {
-            index = status === "ethernet" ? 0 : 1;
+        if (!hasEthernetAvailable) {
+            return 1;
         }
 
-        return index;
+        if (!hasWifiAvailable) {
+            return 0;
+        }
+
+        const pref = NetworkService.userPreference;
+        const status = NetworkService.networkStatus;
+
+        if (pref === "ethernet") {
+            return 0;
+        }
+        if (pref === "wifi") {
+            return 1;
+        }
+        return status === "ethernet" ? 0 : 1;
     }
 
     Row {
@@ -114,7 +126,7 @@ Rectangle {
             DankButtonGroup {
                 id: preferenceControls
                 anchors.verticalCenter: parent.verticalCenter
-                visible: NetworkService.backend === "networkmanager" && DMSService.apiVersion > 10
+                visible: hasBothConnectionTypes && NetworkService.backend === "networkmanager" && DMSService.apiVersion > 10
                 buttonHeight: 28
                 textSize: Theme.fontSizeSmall
 
@@ -451,20 +463,39 @@ Rectangle {
         contentHeight: wifiColumn.height
         clip: true
 
+        property int maxPinnedNetworks: 3
+
+        function normalizePinList(value) {
+            if (Array.isArray(value))
+                return value.filter(v => v)
+            if (typeof value === "string" && value.length > 0)
+                return [value]
+            return []
+        }
+
+        function getPinnedNetworks() {
+            const pins = SettingsData.wifiNetworkPins || {}
+            return normalizePinList(pins["preferredWifi"])
+        }
+
         property var frozenNetworks: []
         property bool menuOpen: false
         property var sortedNetworks: {
             const ssid = NetworkService.currentWifiSSID;
             const networks = NetworkService.wifiNetworks;
-            const pins = SettingsData.wifiNetworkPins || {};
-            const pinnedSSID = pins["preferredWifi"];
+            const pinnedList = getPinnedNetworks()
 
             let sorted = [...networks];
             sorted.sort((a, b) => {
-                if (a.ssid === pinnedSSID && b.ssid !== pinnedSSID)
-                    return -1;
-                if (b.ssid === pinnedSSID && a.ssid !== pinnedSSID)
-                    return 1;
+                const aPinnedIndex = pinnedList.indexOf(a.ssid)
+                const bPinnedIndex = pinnedList.indexOf(b.ssid)
+                if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
+                    if (aPinnedIndex === -1)
+                        return 1
+                    if (bPinnedIndex === -1)
+                        return -1
+                    return aPinnedIndex - bPinnedIndex
+                }
                 if (a.ssid === ssid)
                     return -1;
                 if (b.ssid === ssid)
@@ -613,7 +644,7 @@ Rectangle {
                         height: 28
                         radius: height / 2
                         color: {
-                            const isThisNetworkPinned = (SettingsData.wifiNetworkPins || {})["preferredWifi"] === modelData.ssid;
+                            const isThisNetworkPinned = wifiContent.getPinnedNetworks().includes(modelData.ssid);
                             return isThisNetworkPinned ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : Theme.withAlpha(Theme.surfaceText, 0.05);
                         }
 
@@ -626,7 +657,7 @@ Rectangle {
                                 name: "push_pin"
                                 size: 16
                                 color: {
-                                    const isThisNetworkPinned = (SettingsData.wifiNetworkPins || {})["preferredWifi"] === modelData.ssid;
+                                    const isThisNetworkPinned = wifiContent.getPinnedNetworks().includes(modelData.ssid);
                                     return isThisNetworkPinned ? Theme.primary : Theme.surfaceText;
                                 }
                                 anchors.verticalCenter: parent.verticalCenter
@@ -634,12 +665,12 @@ Rectangle {
 
                             StyledText {
                                 text: {
-                                    const isThisNetworkPinned = (SettingsData.wifiNetworkPins || {})["preferredWifi"] === modelData.ssid;
+                                    const isThisNetworkPinned = wifiContent.getPinnedNetworks().includes(modelData.ssid);
                                     return isThisNetworkPinned ? I18n.tr("Pinned") : I18n.tr("Pin");
                                 }
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: {
-                                    const isThisNetworkPinned = (SettingsData.wifiNetworkPins || {})["preferredWifi"] === modelData.ssid;
+                                    const isThisNetworkPinned = wifiContent.getPinnedNetworks().includes(modelData.ssid);
                                     return isThisNetworkPinned ? Theme.primary : Theme.surfaceText;
                                 }
                                 anchors.verticalCenter: parent.verticalCenter
@@ -650,16 +681,24 @@ Rectangle {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}));
-                                const isCurrentlyPinned = pins["preferredWifi"] === modelData.ssid;
+                                const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}))
+                                let pinnedList = wifiContent.normalizePinList(pins["preferredWifi"])
+                                const pinIndex = pinnedList.indexOf(modelData.ssid)
 
-                                if (isCurrentlyPinned) {
-                                    delete pins["preferredWifi"];
+                                if (pinIndex !== -1) {
+                                    pinnedList.splice(pinIndex, 1)
                                 } else {
-                                    pins["preferredWifi"] = modelData.ssid;
+                                    pinnedList.unshift(modelData.ssid)
+                                    if (pinnedList.length > wifiContent.maxPinnedNetworks)
+                                        pinnedList = pinnedList.slice(0, wifiContent.maxPinnedNetworks)
                                 }
 
-                                SettingsData.set("wifiNetworkPins", pins);
+                                if (pinnedList.length > 0)
+                                    pins["preferredWifi"] = pinnedList
+                                else
+                                    delete pins["preferredWifi"]
+
+                                SettingsData.set("wifiNetworkPins", pins)
                             }
                         }
                     }
@@ -675,8 +714,8 @@ Rectangle {
                                 if (modelData.secured && !modelData.saved) {
                                     if (DMSService.apiVersion >= 7) {
                                         NetworkService.connectToWifi(modelData.ssid);
-                                    } else if (PopoutService.wifiPasswordModal) {
-                                        PopoutService.wifiPasswordModal.show(modelData.ssid);
+                                    } else {
+                                        PopoutService.showWifiPasswordModal(modelData.ssid);
                                     }
                                 } else {
                                     NetworkService.connectToWifi(modelData.ssid);
@@ -737,8 +776,8 @@ Rectangle {
                     if (networkContextMenu.currentSecured && !networkContextMenu.currentSaved) {
                         if (DMSService.apiVersion >= 7) {
                             NetworkService.connectToWifi(networkContextMenu.currentSSID);
-                        } else if (PopoutService.wifiPasswordModal) {
-                            PopoutService.wifiPasswordModal.show(networkContextMenu.currentSSID);
+                        } else {
+                            PopoutService.showWifiPasswordModal(networkContextMenu.currentSSID);
                         }
                     } else {
                         NetworkService.connectToWifi(networkContextMenu.currentSSID);

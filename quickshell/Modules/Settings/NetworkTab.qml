@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.Common
 import qs.Modals.Common
 import qs.Modals.FileBrowser
@@ -14,6 +15,7 @@ Item {
     property string expandedVpnUuid: ""
     property string expandedWifiSsid: ""
     property string expandedEthDevice: ""
+    property int maxPinnedWifiNetworks: 3
 
     Component.onCompleted: {
         NetworkService.addRef();
@@ -23,15 +25,59 @@ Item {
         NetworkService.removeRef();
     }
 
-    FileBrowserModal {
-        id: vpnFileBrowser
-        browserTitle: I18n.tr("Import VPN")
-        browserIcon: "vpn_key"
-        browserType: "vpn"
-        fileExtensions: VPNService.getFileFilter()
+    function openVpnFileBrowser() {
+        vpnFileBrowserLoader.active = true;
+        if (vpnFileBrowserLoader.item)
+            vpnFileBrowserLoader.item.open();
+    }
 
-        onFileSelected: path => {
-            VPNService.importVpn(path.replace("file://", ""));
+    function normalizePinList(value) {
+        if (Array.isArray(value))
+            return value.filter(v => v)
+        if (typeof value === "string" && value.length > 0)
+            return [value]
+        return []
+    }
+
+    function getPinnedWifiNetworks() {
+        const pins = SettingsData.wifiNetworkPins || {}
+        return normalizePinList(pins["preferredWifi"])
+    }
+
+    function toggleWifiPin(ssid) {
+        const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}))
+        let pinnedList = normalizePinList(pins["preferredWifi"])
+        const pinIndex = pinnedList.indexOf(ssid)
+
+        if (pinIndex !== -1) {
+            pinnedList.splice(pinIndex, 1)
+        } else {
+            pinnedList.unshift(ssid)
+            if (pinnedList.length > maxPinnedWifiNetworks)
+                pinnedList = pinnedList.slice(0, maxPinnedWifiNetworks)
+        }
+
+        if (pinnedList.length > 0)
+            pins["preferredWifi"] = pinnedList
+        else
+            delete pins["preferredWifi"]
+
+        SettingsData.set("wifiNetworkPins", pins)
+    }
+
+    LazyLoader {
+        id: vpnFileBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            browserTitle: I18n.tr("Import VPN")
+            browserIcon: "vpn_key"
+            browserType: "vpn"
+            fileExtensions: VPNService.getFileFilter()
+
+            onFileSelected: path => {
+                VPNService.importVpn(path.replace("file://", ""));
+            }
         }
     }
 
@@ -399,14 +445,14 @@ Item {
                                                         text: "•"
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
-                                                        visible: modelData.ip && modelData.ip.length > 0
+                                                        visible: (modelData.ip || "").length > 0
                                                     }
 
                                                     StyledText {
                                                         text: modelData.ip || ""
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
-                                                        visible: modelData.ip && modelData.ip.length > 0
+                                                        visible: (modelData.ip || "").length > 0
                                                     }
                                                 }
                                             }
@@ -769,6 +815,13 @@ Item {
                             spacing: Theme.spacingS
 
                             DankActionButton {
+                                iconName: "wifi_find"
+                                buttonSize: 32
+                                visible: NetworkService.backend === "networkmanager" && NetworkService.wifiEnabled && !NetworkService.wifiToggling
+                                onClicked: PopoutService.showHiddenNetworkModal()
+                            }
+
+                            DankActionButton {
                                 iconName: "refresh"
                                 buttonSize: 32
                                 visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && !NetworkService.isScanning
@@ -1007,15 +1060,19 @@ Item {
                                 model: {
                                     const ssid = NetworkService.currentWifiSSID;
                                     const networks = NetworkService.wifiNetworks || [];
-                                    const pins = SettingsData.wifiNetworkPins || {};
-                                    const pinnedSSID = pins["preferredWifi"];
+                                    const pinnedList = networkTab.getPinnedWifiNetworks();
 
                                     let sorted = [...networks];
                                     sorted.sort((a, b) => {
-                                        if (a.ssid === pinnedSSID && b.ssid !== pinnedSSID)
-                                            return -1;
-                                        if (b.ssid === pinnedSSID && a.ssid !== pinnedSSID)
-                                            return 1;
+                                        const aPinnedIndex = pinnedList.indexOf(a.ssid)
+                                        const bPinnedIndex = pinnedList.indexOf(b.ssid)
+                                        if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
+                                            if (aPinnedIndex === -1)
+                                                return 1
+                                            if (bPinnedIndex === -1)
+                                                return -1
+                                            return aPinnedIndex - bPinnedIndex
+                                        }
                                         if (a.ssid === ssid)
                                             return -1;
                                         if (b.ssid === ssid)
@@ -1031,7 +1088,7 @@ Item {
                                     required property int index
 
                                     readonly property bool isConnected: modelData.ssid === NetworkService.currentWifiSSID
-                                    readonly property bool isPinned: (SettingsData.wifiNetworkPins || {})["preferredWifi"] === modelData.ssid
+                                    readonly property bool isPinned: networkTab.getPinnedWifiNetworks().includes(modelData.ssid)
                                     readonly property bool isExpanded: networkTab.expandedWifiSsid === modelData.ssid
 
                                     width: parent.width
@@ -1102,6 +1159,14 @@ Item {
                                                             visible: isPinned
                                                             anchors.verticalCenter: parent.verticalCenter
                                                         }
+
+                                                        DankIcon {
+                                                            name: "visibility_off"
+                                                            size: 14
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                        }
                                                     }
 
                                                     Row {
@@ -1125,6 +1190,20 @@ Item {
                                                             font.pixelSize: Theme.fontSizeSmall
                                                             color: Theme.primary
                                                             visible: modelData.saved
+                                                        }
+
+                                                        StyledText {
+                                                            text: "•"
+                                                            font.pixelSize: Theme.fontSizeSmall
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
+                                                        }
+
+                                                        StyledText {
+                                                            text: I18n.tr("Hidden")
+                                                            font.pixelSize: Theme.fontSizeSmall
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
                                                         }
 
                                                         StyledText {
@@ -1184,13 +1263,7 @@ Item {
                                                     buttonSize: 28
                                                     iconColor: isPinned ? Theme.primary : Theme.surfaceVariantText
                                                     onClicked: {
-                                                        const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}));
-                                                        if (isPinned) {
-                                                            delete pins["preferredWifi"];
-                                                        } else {
-                                                            pins["preferredWifi"] = modelData.ssid;
-                                                        }
-                                                        SettingsData.set("wifiNetworkPins", pins);
+                                                        networkTab.toggleWifiPin(modelData.ssid)
                                                     }
                                                 }
 
@@ -1491,7 +1564,7 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: VPNService.importing ? Qt.BusyCursor : Qt.PointingHandCursor
                                     enabled: !VPNService.importing
-                                    onClicked: vpnFileBrowser.open()
+                                    onClicked: networkTab.openVpnFileBrowser()
                                 }
                             }
 

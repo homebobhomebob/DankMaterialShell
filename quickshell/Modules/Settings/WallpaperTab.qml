@@ -10,6 +10,9 @@ import qs.Modules.Settings.Widgets
 Item {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     property var parentModal: null
     property string selectedMonitorName: {
         var screens = Quickshell.screens;
@@ -55,9 +58,9 @@ Item {
                         CachingImage {
                             anchors.fill: parent
                             anchors.margins: 1
-                            source: {
+                            imagePath: {
                                 var currentWallpaper = SessionData.perMonitorWallpaper ? SessionData.getMonitorWallpaper(selectedMonitorName) : SessionData.wallpaperPath;
-                                return (currentWallpaper !== "" && !currentWallpaper.startsWith("#")) ? "file://" + currentWallpaper : "";
+                                return (currentWallpaper !== "" && !currentWallpaper.startsWith("#")) ? currentWallpaper : "";
                             }
                             fillMode: Image.PreserveAspectCrop
                             visible: {
@@ -136,7 +139,7 @@ Item {
                                     MouseArea {
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: mainWallpaperBrowser.open()
+                                        onClicked: root.openMainWallpaperBrowser()
                                     }
                                 }
 
@@ -233,6 +236,7 @@ Item {
                             elide: Text.ElideMiddle
                             maximumLineCount: 1
                             width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         StyledText {
@@ -245,6 +249,7 @@ Item {
                             elide: Text.ElideMiddle
                             maximumLineCount: 1
                             width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                             visible: {
                                 var currentWallpaper = SessionData.perMonitorWallpaper ? SessionData.getMonitorWallpaper(selectedMonitorName) : SessionData.wallpaperPath;
                                 return currentWallpaper !== "";
@@ -252,7 +257,9 @@ Item {
                         }
 
                         Row {
+                            anchors.left: parent.left
                             spacing: Theme.spacingS
+                            layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
                             visible: {
                                 var currentWallpaper = SessionData.perMonitorWallpaper ? SessionData.getMonitorWallpaper(selectedMonitorName) : SessionData.wallpaperPath;
                                 return currentWallpaper !== "";
@@ -391,9 +398,9 @@ Item {
                                 CachingImage {
                                     anchors.fill: parent
                                     anchors.margins: 1
-                                    source: {
+                                    imagePath: {
                                         var lightWallpaper = SessionData.wallpaperPathLight;
-                                        return (lightWallpaper !== "" && !lightWallpaper.startsWith("#")) ? "file://" + lightWallpaper : "";
+                                        return (lightWallpaper !== "" && !lightWallpaper.startsWith("#")) ? lightWallpaper : "";
                                     }
                                     fillMode: Image.PreserveAspectCrop
                                     visible: {
@@ -469,7 +476,7 @@ Item {
                                             MouseArea {
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: lightWallpaperBrowser.open()
+                                                onClicked: root.openLightWallpaperBrowser()
                                             }
                                         }
 
@@ -575,9 +582,9 @@ Item {
                                 CachingImage {
                                     anchors.fill: parent
                                     anchors.margins: 1
-                                    source: {
+                                    imagePath: {
                                         var darkWallpaper = SessionData.wallpaperPathDark;
-                                        return (darkWallpaper !== "" && !darkWallpaper.startsWith("#")) ? "file://" + darkWallpaper : "";
+                                        return (darkWallpaper !== "" && !darkWallpaper.startsWith("#")) ? darkWallpaper : "";
                                     }
                                     fillMode: Image.PreserveAspectCrop
                                     visible: {
@@ -653,7 +660,7 @@ Item {
                                             MouseArea {
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: darkWallpaperBrowser.open()
+                                                onClicked: root.openDarkWallpaperBrowser()
                                             }
                                         }
 
@@ -968,17 +975,9 @@ Item {
 
                     SettingsDropdownRow {
                         id: intervalDropdown
-                        property var intervalOptions: [
-                            "5 seconds", "10 seconds", "15 seconds", "20 seconds", "25 seconds", "30 seconds",
-                            "35 seconds", "40 seconds", "45 seconds", "50 seconds", "55 seconds",
-                            "1 minute", "5 minutes", "15 minutes", "30 minutes", "1 hour", "1.5 hours", "2 hours",
-                            "3 hours", "4 hours", "6 hours", "8 hours", "12 hours"
-                        ]
+                        property var intervalOptions: ["5 seconds", "10 seconds", "15 seconds", "20 seconds", "25 seconds", "30 seconds", "35 seconds", "40 seconds", "45 seconds", "50 seconds", "55 seconds", "1 minute", "5 minutes", "15 minutes", "30 minutes", "1 hour", "1.5 hours", "2 hours", "3 hours", "4 hours", "6 hours", "8 hours", "12 hours"]
 
-                        property var intervalValues: [
-                            5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
-                            300, 900, 1800, 3600, 5400, 7200, 10800, 14400, 21600, 28800, 43200
-                        ]
+                        property var intervalValues: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 300, 900, 1800, 3600, 5400, 7200, 10800, 14400, 21600, 28800, 43200]
                         tab: "wallpaper"
                         tags: ["interval", "cycling", "time", "frequency"]
                         settingKey: "wallpaperCyclingInterval"
@@ -1243,53 +1242,83 @@ Item {
         }
     }
 
-    FileBrowserModal {
-        id: mainWallpaperBrowser
-        parentModal: root.parentModal
-        browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
-        browserIcon: "wallpaper"
-        browserType: "wallpaper"
-        showHiddenFiles: true
-        fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
-        onFileSelected: path => {
-            if (SessionData.perMonitorWallpaper) {
-                SessionData.setMonitorWallpaper(selectedMonitorName, path);
-            } else {
-                SessionData.setWallpaper(path);
+    function openMainWallpaperBrowser() {
+        mainWallpaperBrowserLoader.active = true;
+        if (mainWallpaperBrowserLoader.item)
+            mainWallpaperBrowserLoader.item.open();
+    }
+
+    function openLightWallpaperBrowser() {
+        lightWallpaperBrowserLoader.active = true;
+        if (lightWallpaperBrowserLoader.item)
+            lightWallpaperBrowserLoader.item.open();
+    }
+
+    function openDarkWallpaperBrowser() {
+        darkWallpaperBrowserLoader.active = true;
+        if (darkWallpaperBrowserLoader.item)
+            darkWallpaperBrowserLoader.item.open();
+    }
+
+    LazyLoader {
+        id: mainWallpaperBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            parentModal: root.parentModal
+            browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
+            browserIcon: "wallpaper"
+            browserType: "wallpaper"
+            showHiddenFiles: true
+            fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
+            onFileSelected: path => {
+                if (SessionData.perMonitorWallpaper) {
+                    SessionData.setMonitorWallpaper(selectedMonitorName, path);
+                } else {
+                    SessionData.setWallpaper(path);
+                }
+                close();
             }
-            close();
         }
     }
 
-    FileBrowserModal {
-        id: lightWallpaperBrowser
-        parentModal: root.parentModal
-        browserTitle: I18n.tr("Select Wallpaper", "light mode wallpaper file browser title")
-        browserIcon: "light_mode"
-        browserType: "wallpaper"
-        showHiddenFiles: true
-        fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
-        onFileSelected: path => {
-            SessionData.wallpaperPathLight = path;
-            SessionData.syncWallpaperForCurrentMode();
-            SessionData.saveSettings();
-            close();
+    LazyLoader {
+        id: lightWallpaperBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            parentModal: root.parentModal
+            browserTitle: I18n.tr("Select Wallpaper", "light mode wallpaper file browser title")
+            browserIcon: "light_mode"
+            browserType: "wallpaper"
+            showHiddenFiles: true
+            fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
+            onFileSelected: path => {
+                SessionData.wallpaperPathLight = path;
+                SessionData.syncWallpaperForCurrentMode();
+                SessionData.saveSettings();
+                close();
+            }
         }
     }
 
-    FileBrowserModal {
-        id: darkWallpaperBrowser
-        parentModal: root.parentModal
-        browserTitle: I18n.tr("Select Wallpaper", "dark mode wallpaper file browser title")
-        browserIcon: "dark_mode"
-        browserType: "wallpaper"
-        showHiddenFiles: true
-        fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
-        onFileSelected: path => {
-            SessionData.wallpaperPathDark = path;
-            SessionData.syncWallpaperForCurrentMode();
-            SessionData.saveSettings();
-            close();
+    LazyLoader {
+        id: darkWallpaperBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            parentModal: root.parentModal
+            browserTitle: I18n.tr("Select Wallpaper", "dark mode wallpaper file browser title")
+            browserIcon: "dark_mode"
+            browserType: "wallpaper"
+            showHiddenFiles: true
+            fileExtensions: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp"]
+            onFileSelected: path => {
+                SessionData.wallpaperPathDark = path;
+                SessionData.syncWallpaperForCurrentMode();
+                SessionData.saveSettings();
+                close();
+            }
         }
     }
 }

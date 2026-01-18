@@ -70,6 +70,7 @@ var SPEC = {
     controlCenterShowMicPercent: { def: false },
     controlCenterShowBatteryIcon: { def: false },
     controlCenterShowPrinterIcon: { def: false },
+    controlCenterShowScreenSharingIcon: { def: true },
 
     showPrivacyButton: { def: true },
     privacyShowMicIcon: { def: false },
@@ -94,10 +95,16 @@ var SPEC = {
     showWorkspaceApps: { def: false },
     maxWorkspaceIcons: { def: 3 },
     groupWorkspaceApps: { def: true },
-    workspacesPerMonitor: { def: true },
+    workspaceFollowFocus: { def: false },
     showOccupiedWorkspacesOnly: { def: false },
     reverseScrolling: { def: false },
     dwlShowAllTags: { def: false },
+    workspaceColorMode: { def: "default" },
+    workspaceUnfocusedColorMode: { def: "default" },
+    workspaceUrgentColorMode: { def: "default" },
+    workspaceFocusedBorderEnabled: { def: false },
+    workspaceFocusedBorderColor: { def: "primary" },
+    workspaceFocusedBorderThickness: { def: 2 },
     workspaceNameIcons: { def: {} },
     waveProgressEnabled: { def: true },
     scrollTitleEnabled: { def: true },
@@ -109,6 +116,13 @@ var SPEC = {
     keyboardLayoutNameCompactMode: { def: false },
     runningAppsCurrentWorkspace: { def: false },
     runningAppsGroupByApp: { def: false },
+    appIdSubstitutions: { def: [
+        { pattern: "Spotify", replacement: "spotify", type: "exact" },
+        { pattern: "beepertexts", replacement: "beeper", type: "exact" },
+        { pattern: "home assistant desktop", replacement: "homeassistant-desktop", type: "exact" },
+        { pattern: "com.transmissionbt.transmission", replacement: "transmission-gtk", type: "contains" },
+        { pattern: "^steam_app_(\\d+)$", replacement: "steam_icon_$1", type: "regex" }
+    ]},
     centeringMode: { def: "index" },
     clockDateFormat: { def: "" },
     lockDateFormat: { def: "" },
@@ -133,6 +147,10 @@ var SPEC = {
     qt5ctAvailable: { def: false, persist: false },
     qt6ctAvailable: { def: false, persist: false },
     gtkAvailable: { def: false, persist: false },
+
+    cursorSettings: { def: { theme: "System Default", size: 24, niri: { hideWhenTyping: false, hideAfterInactiveMs: 0 }, hyprland: { hideOnKeyPress: false, hideOnTouch: false, inactiveTimeout: 0 }, dwl: { cursorHideTimeout: 0 } }, onChange: "updateCompositorCursor" },
+    availableCursorThemes: { def: ["System Default"], persist: false },
+    systemDefaultCursorTheme: { def: "", persist: false },
 
     launcherLogoMode: { def: "apps" },
     launcherLogoCustomPath: { def: "" },
@@ -173,9 +191,9 @@ var SPEC = {
     batteryChargeLimit: { def: 100 },
     lockBeforeSuspend: { def: false },
     loginctlLockIntegration: { def: true },
-    fadeToLockEnabled: { def: false },
+    fadeToLockEnabled: { def: true },
     fadeToLockGracePeriod: { def: 5 },
-    fadeToDpmsEnabled: { def: false },
+    fadeToDpmsEnabled: { def: true },
     fadeToDpmsGracePeriod: { def: 5 },
     launchPrefix: { def: "" },
     brightnessDevicePins: { def: {} },
@@ -213,6 +231,7 @@ var SPEC = {
 
     showDock: { def: false },
     dockAutoHide: { def: false },
+    dockSmartAutoHide: { def: false },
     dockGroupByApp: { def: false },
     dockOpenOnOverview: { def: false },
     dockPosition: { def: 1 },
@@ -251,6 +270,7 @@ var SPEC = {
     notificationTimeoutLow: { def: 5000 },
     notificationTimeoutNormal: { def: 5000 },
     notificationTimeoutCritical: { def: 0 },
+    notificationCompactMode: { def: false },
     notificationPopupPosition: { def: 0 },
     notificationHistoryEnabled: { def: true },
     notificationHistoryMaxCount: { def: 50 },
@@ -383,6 +403,8 @@ var SPEC = {
     desktopWidgetGridSettings: { def: {} },
 
     desktopWidgetInstances: { def: [] },
+
+    desktopWidgetGroups: { def: [] },
 
     builtInPluginSettings: { def: {} }
 };

@@ -19,6 +19,7 @@ StyledRect {
     property string iconName: ""
     property bool collapsible: false
     property bool expanded: true
+    property real headerLeftPadding: 0
 
     default property alias content: contentColumn.children
     property alias headerActions: headerActionsRow.children
@@ -115,6 +116,7 @@ StyledRect {
 
             Row {
                 anchors.left: parent.left
+                anchors.leftMargin: root.headerLeftPadding
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingM
 
@@ -135,12 +137,14 @@ StyledRect {
                     color: Theme.surfaceText
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.title !== ""
+                    width: implicitWidth
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
 
             Row {
                 id: headerActionsRow
-                anchors.right: caretIcon.left
+                anchors.right: root.collapsible ? caretIcon.left : parent.right
                 anchors.rightMargin: root.collapsible ? Theme.spacingS : 0
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingXS
@@ -170,6 +174,7 @@ StyledRect {
             }
 
             MouseArea {
+                visible: root.collapsible
                 anchors.left: caretIcon.left
                 anchors.right: parent.right
                 anchors.top: parent.top

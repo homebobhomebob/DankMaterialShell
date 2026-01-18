@@ -1,5 +1,5 @@
 pragma Singleton
-pragma ComponentBehavior
+pragma ComponentBehavior: Bound
 
 import QtCore
 import QtQuick
@@ -26,6 +26,10 @@ Singleton {
     property var _realOutputs: ({})
 
     property bool inOverview: false
+
+    property var casts: []
+    property bool hasCasts: casts.length > 0
+    property bool hasActiveCast: casts.some(c => c.is_active)
 
     property int currentKeyboardLayoutIndex: 0
     property var keyboardLayoutNames: []
@@ -146,6 +150,20 @@ Singleton {
     }
 
     Process {
+        id: writeCursorProcess
+        property string cursorContent: ""
+        property string cursorPath: ""
+
+        onExited: exitCode => {
+            if (exitCode === 0) {
+                console.info("NiriService: Generated cursor config at", cursorPath);
+                return;
+            }
+            console.warn("NiriService: Failed to write cursor config, exit code:", exitCode);
+        }
+    }
+
+    Process {
         id: ensureOutputsProcess
         property string outputsPath: ""
 
@@ -162,6 +180,16 @@ Singleton {
         onExited: exitCode => {
             if (exitCode !== 0)
                 console.warn("NiriService: Failed to ensure binds.kdl, exit code:", exitCode);
+        }
+    }
+
+    Process {
+        id: ensureCursorProcess
+        property string cursorPath: ""
+
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                console.warn("NiriService: Failed to ensure cursor.kdl, exit code:", exitCode);
         }
     }
 
@@ -331,6 +359,15 @@ Singleton {
             break;
         case 'ScreenshotCaptured':
             handleScreenshotCaptured(event.ScreenshotCaptured);
+            break;
+        case 'CastsChanged':
+            handleCastsChanged(event.CastsChanged);
+            break;
+        case 'CastStartedOrChanged':
+            handleCastStartedOrChanged(event.CastStartedOrChanged);
+            break;
+        case 'CastStopped':
+            handleCastStopped(event.CastStopped);
             break;
         }
     }
@@ -623,6 +660,28 @@ Singleton {
             });
             pendingScreenshotPath = "";
         }
+    }
+
+    function handleCastsChanged(data) {
+        casts = data.casts || [];
+    }
+
+    function handleCastStartedOrChanged(data) {
+        if (!data.cast)
+            return;
+        const cast = data.cast;
+        const existingIndex = casts.findIndex(c => c.stream_id === cast.stream_id);
+        if (existingIndex >= 0) {
+            const updatedCasts = [...casts];
+            updatedCasts[existingIndex] = cast;
+            casts = updatedCasts;
+        } else {
+            casts = [...casts, cast];
+        }
+    }
+
+    function handleCastStopped(data) {
+        casts = casts.filter(c => c.stream_id !== data.stream_id);
     }
 
     function updateCurrentOutputWorkspaces() {
@@ -1074,6 +1133,11 @@ Singleton {
         ensureBindsProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${bindsPath}" ] && touch "${bindsPath}" || true`];
         ensureBindsProcess.running = true;
 
+        const cursorPath = niriDmsDir + "/cursor.kdl";
+        ensureCursorProcess.cursorPath = cursorPath;
+        ensureCursorProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${cursorPath}" ] && touch "${cursorPath}" || true`];
+        ensureCursorProcess.running = true;
+
         configGenerationPending = false;
     }
 
@@ -1088,6 +1152,70 @@ Singleton {
         writeBlurruleProcess.blurrulePath = blurrulePath;
         writeBlurruleProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && cp --no-preserve=mode "${sourceBlurrulePath}" "${blurrulePath}"`];
         writeBlurruleProcess.running = true;
+    }
+
+    function generateNiriCursorConfig() {
+        if (!CompositorService.isNiri)
+            return;
+
+        console.log("NiriService: Generating cursor config...");
+
+        const configDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
+        const niriDmsDir = configDir + "/niri/dms";
+        const cursorPath = niriDmsDir + "/cursor.kdl";
+
+        const settings = typeof SettingsData !== "undefined" ? SettingsData.cursorSettings : null;
+        if (!settings) {
+            writeCursorProcess.cursorContent = "";
+            writeCursorProcess.cursorPath = cursorPath;
+            writeCursorProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && : > "${cursorPath}"`];
+            writeCursorProcess.running = true;
+            return;
+        }
+
+        const themeName = settings.theme === "System Default" ? (SettingsData.systemDefaultCursorTheme || "") : settings.theme;
+        const size = settings.size || 24;
+        const hideWhenTyping = settings.niri?.hideWhenTyping || false;
+        const hideAfterMs = settings.niri?.hideAfterInactiveMs || 0;
+
+        const isDefaultConfig = !themeName && size === 24 && !hideWhenTyping && hideAfterMs === 0;
+        if (isDefaultConfig) {
+            writeCursorProcess.cursorContent = "";
+            writeCursorProcess.cursorPath = cursorPath;
+            writeCursorProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && : > "${cursorPath}"`];
+            writeCursorProcess.running = true;
+            return;
+        }
+
+        const dmsWarning = `// ! DO NOT EDIT !
+// ! AUTO-GENERATED BY DMS !
+// ! CHANGES WILL BE OVERWRITTEN !
+// ! PLACE YOUR CUSTOM CONFIGURATION ELSEWHERE !
+
+`;
+
+        let cursorContent = dmsWarning + `cursor {\n`;
+
+        if (themeName)
+            cursorContent += `    xcursor-theme "${themeName}"\n`;
+
+        cursorContent += `    xcursor-size ${size}\n`;
+
+        if (hideWhenTyping)
+            cursorContent += `    hide-when-typing\n`;
+
+        if (hideAfterMs > 0)
+            cursorContent += `    hide-after-inactive-ms ${hideAfterMs}\n`;
+
+        cursorContent += `}`;
+
+        writeCursorProcess.cursorContent = cursorContent;
+        writeCursorProcess.cursorPath = cursorPath;
+
+        const escapedCursorContent = cursorContent.replace(/'/g, "'\\''");
+
+        writeCursorProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && printf '%s' '${escapedCursorContent}' > "${cursorPath}"`];
+        writeCursorProcess.running = true;
     }
 
     function updateOutputPosition(outputName, x, y) {
