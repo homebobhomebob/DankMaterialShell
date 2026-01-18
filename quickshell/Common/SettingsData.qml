@@ -206,6 +206,7 @@ Singleton {
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
     property string workspaceColorMode: "default"
+    property string workspaceOccupiedColorMode: "default"
     property string workspaceUnfocusedColorMode: "default"
     property string workspaceUrgentColorMode: "default"
     property bool workspaceFocusedBorderEnabled: false
@@ -394,6 +395,7 @@ Singleton {
     property bool lockScreenShowDate: true
     property bool lockScreenShowProfileImage: true
     property bool lockScreenShowPasswordField: true
+    property bool lockScreenPowerOffMonitorsOnLock: false
 
     property bool enableFprint: false
     property int maxFprintTries: 15
@@ -493,7 +495,8 @@ Singleton {
             "shadowIntensity": 0,
             "shadowOpacity": 60,
             "shadowColorMode": "text",
-            "shadowCustomColor": "#000000"
+            "shadowCustomColor": "#000000",
+            "clickThrough": false
         }
     ]
 

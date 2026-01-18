@@ -100,6 +100,7 @@ var SPEC = {
     reverseScrolling: { def: false },
     dwlShowAllTags: { def: false },
     workspaceColorMode: { def: "default" },
+    workspaceOccupiedColorMode: { def: "default" },
     workspaceUnfocusedColorMode: { def: "default" },
     workspaceUrgentColorMode: { def: "default" },
     workspaceFocusedBorderEnabled: { def: false },
@@ -259,6 +260,7 @@ var SPEC = {
     lockScreenShowDate: { def: true },
     lockScreenShowProfileImage: { def: true },
     lockScreenShowPasswordField: { def: true },
+    lockScreenPowerOffMonitorsOnLock: { def: false },
     enableFprint: { def: false },
     maxFprintTries: { def: 15 },
     fprintdAvailable: { def: false, persist: false },
@@ -356,7 +358,8 @@ var SPEC = {
         shadowIntensity: 0,
         shadowOpacity: 60,
         shadowColorMode: "text",
-        shadowCustomColor: "#000000"
+        shadowCustomColor: "#000000",
+        clickThrough: false
     }], onChange: "updateBarConfigs" },
 
     desktopClockEnabled: { def: false },

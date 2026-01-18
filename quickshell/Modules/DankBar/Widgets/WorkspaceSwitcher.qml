@@ -731,7 +731,8 @@ Item {
     Flow {
         id: workspaceRow
 
-        anchors.centerIn: parent
+        x: isVertical ? visualBackground.x : (parent.width - implicitWidth) / 2
+        y: isVertical ? (parent.height - implicitHeight) / 2 : visualBackground.y
         spacing: Theme.spacingS
         flow: isVertical ? Flow.TopToBottom : Flow.LeftToRight
 
@@ -753,6 +754,16 @@ Item {
                     if (CompositorService.isSway || CompositorService.isScroll)
                         return !!(modelData && modelData.num === root.currentWorkspace);
                     return modelData === root.currentWorkspace;
+                }
+                property bool isOccupied: {
+                    if (CompositorService.isHyprland)
+                        return Array.from(Hyprland.toplevels?.values || [])
+                            .some(tl => tl.workspace?.id === modelData?.id);
+                    if (CompositorService.isDwl)
+                        return modelData.clients > 0;
+                    if (CompositorService.isNiri)
+                        return NiriService.windows?.some(win => win.workspace_id === modelData?.id) ?? false;
+                    return false;
                 }
                 property bool isPlaceholder: {
                     if (root.useExtWorkspace)
@@ -832,6 +843,21 @@ Item {
                         return unfocusedColor;
                     default:
                         return Theme.primary;
+                    }
+                }
+
+                readonly property color occupiedColor: {
+                    switch (SettingsData.workspaceOccupiedColorMode) {
+                    case "s":
+                        return Theme.surface;
+                    case "sc":
+                        return Theme.surfaceContainer;
+                    case "sch":
+                        return Theme.surfaceContainerHigh;
+                    case "none":
+                        return unfocusedColor;
+                    default:
+                        return Theme.secondary;
                     }
                 }
 
@@ -968,12 +994,13 @@ Item {
                     dataUpdateTimer.restart();
                 }
 
-                width: root.isVertical ? root.barThickness : visualWidth
-                height: root.isVertical ? visualHeight : root.barThickness
+                width: root.isVertical ? root.widgetHeight : visualWidth
+                height: root.isVertical ? visualHeight : root.widgetHeight
 
                 Rectangle {
                     id: focusedBorderRing
-                    anchors.centerIn: parent
+                    x: root.isVertical ? (root.widgetHeight - width) / 2 : (parent.width - width) / 2
+                    y: root.isVertical ? (parent.height - height) / 2 : (root.widgetHeight - height) / 2
                     width: {
                         const borderWidth = (SettingsData.workspaceFocusedBorderEnabled && isActive && !isPlaceholder) ? SettingsData.workspaceFocusedBorderThickness : 0;
                         return delegateRoot.visualWidth + borderWidth * 2;
@@ -1020,9 +1047,10 @@ Item {
                     id: visualContent
                     width: delegateRoot.visualWidth
                     height: delegateRoot.visualHeight
-                    anchors.centerIn: parent
+                    x: root.isVertical ? (root.widgetHeight - width) / 2 : (parent.width - width) / 2
+                    y: root.isVertical ? (parent.height - height) / 2 : (root.widgetHeight - height) / 2
                     radius: Theme.cornerRadius
-                    color: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? Theme.withAlpha(unfocusedColor, 0.7) : unfocusedColor
+                    color: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? Theme.withAlpha(unfocusedColor, 0.7) : isOccupied ? occupiedColor : unfocusedColor
 
                     border.width: isUrgent ? 2 : 0
                     border.color: isUrgent ? urgentColor : "transparent"
