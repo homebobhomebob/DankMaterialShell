@@ -514,6 +514,14 @@ Singleton {
 
     function setWallpaperCyclingEnabled(enabled) {
         wallpaperCyclingEnabled = enabled;
+        // Si se deshabilita el cycling global, deshabilitar todos los monitores  
+        if (!enabled && perMonitorWallpaper) {  
+            var newSettings = Object.assign({}, monitorCyclingSettings);  
+            for (var screenName in newSettings) {  
+                newSettings[screenName].enabled = false;  
+            }  
+            monitorCyclingSettings = newSettings;  
+        }  
         saveSettings();
     }
 
@@ -549,6 +557,9 @@ Singleton {
 
         var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
 
+        // PRESERVAR el estado actual ANTES de limpiar newSettings  
+        var currentSettings = getMonitorCyclingSettings(identifier);  
+
         var newSettings = {};
         for (var key in monitorCyclingSettings) {
             var isThisScreen = key === screen.name || (screen.model && key === screen.model);
@@ -559,10 +570,10 @@ Singleton {
 
         if (!newSettings[identifier]) {
             newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
+                "enabled": enabled,
+                "mode": currentSettings.mode,
+                "interval": currentSettings.interval,
+                "time": currentSettings.time
             };
         }
         newSettings[identifier].enabled = enabled;
@@ -587,6 +598,9 @@ Singleton {
 
         var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
 
+        // PRESERVAR el estado actual ANTES de limpiar newSettings  
+        var currentSettings = getMonitorCyclingSettings(identifier);  
+
         var newSettings = {};
         for (var key in monitorCyclingSettings) {
             var isThisScreen = key === screen.name || (screen.model && key === screen.model);
@@ -597,10 +611,10 @@ Singleton {
 
         if (!newSettings[identifier]) {
             newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
+                "enabled": currentSettings.enabled,
+                "mode": mode,
+                "interval": currentSettings.interval,
+                "time": currentSettings.time
             };
         }
         newSettings[identifier].mode = mode;
@@ -624,9 +638,10 @@ Singleton {
         }
 
         var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
-        
+
+        // PRESERVAR el estado actual ANTES de limpiar newSettings  
         var currentSettings = getMonitorCyclingSettings(identifier);
-        
+
         var newSettings = {};
         for (var key in monitorCyclingSettings) {
             var isThisScreen = key === identifier;
@@ -637,10 +652,10 @@ Singleton {
 
         if (!newSettings[identifier]) {
             newSettings[identifier] = {
-                "enabled": currentSettings.enabled,  // ← Preservar estado actual  
-                "mode": currentSettings.mode,  
-                "interval": interval,  
-                "time": currentSettings.time  
+                "enabled": currentSettings.enabled,
+                "mode": currentSettings.mode,
+                "interval": interval,
+                "time": currentSettings.time
             };
         }
         newSettings[identifier].interval = interval;
@@ -665,6 +680,9 @@ Singleton {
 
         var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
 
+        // PRESERVAR el estado actual ANTES de limpiar newSettings  
+        var currentSettings = getMonitorCyclingSettings(identifier);  
+
         var newSettings = {};
         for (var key in monitorCyclingSettings) {
             var isThisScreen = key === screen.name || (screen.model && key === screen.model);
@@ -675,10 +693,10 @@ Singleton {
 
         if (!newSettings[identifier]) {
             newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
+                "enabled": currentSettings.enabled,
+                "mode": currentSettings.mode,
+                "interval": currentSettings.interval,
+                "time": time
             };
         }
         newSettings[identifier].time = time;
