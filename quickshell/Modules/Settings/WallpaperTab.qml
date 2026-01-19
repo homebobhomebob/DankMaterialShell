@@ -890,11 +890,10 @@ Item {
                     description: I18n.tr("Automatically cycle through wallpapers in the same folder")
                     checked: SessionData.perMonitorWallpaper ? SessionData.getMonitorCyclingSettings(selectedMonitorName).enabled : SessionData.wallpaperCyclingEnabled
                     onToggled: toggled => {
-                        if (SessionData.perMonitorWallpaper) {
-                            SessionData.setMonitorCyclingEnabled(selectedMonitorName, toggled);
-                        } else {
-                            SessionData.setWallpaperCyclingEnabled(toggled);
-                        }
+                        if (SessionData.perMonitorWallpaper) {    
+                            SessionData.setMonitorCyclingEnabled(selectedMonitorName, toggled);    
+                        }    
+                        SessionData.setWallpaperCyclingEnabled(toggled);
                     }
 
                     Connections {
