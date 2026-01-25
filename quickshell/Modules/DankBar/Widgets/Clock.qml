@@ -30,13 +30,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            if (SettingsData.use24HourClock) {
-                                return String(systemClock?.date?.getHours()).padStart(2, '0').charAt(0);
-                            } else {
-                                const hours = systemClock?.date?.getHours();
-                                const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                            const hours = systemClock?.date?.getHours();
+                            if (SettingsData.use24HourClock)
+                                return String(hours).padStart(2, '0').charAt(0);
+                            const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                            if (SettingsData.padHours12Hour)
                                 return String(display).padStart(2, '0').charAt(0);
-                            }
+                            return display >= 10 ? String(display).charAt(0) : "";
                         }
                         font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
                         color: Theme.widgetTextColor
@@ -47,13 +47,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            if (SettingsData.use24HourClock) {
-                                return String(systemClock?.date?.getHours()).padStart(2, '0').charAt(1);
-                            } else {
-                                const hours = systemClock?.date?.getHours();
-                                const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                            const hours = systemClock?.date?.getHours();
+                            if (SettingsData.use24HourClock)
+                                return String(hours).padStart(2, '0').charAt(1);
+                            const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                            if (SettingsData.padHours12Hour)
                                 return String(display).padStart(2, '0').charAt(1);
-                            }
+                            return display >= 10 ? String(display).charAt(1) : String(display);
                         }
                         font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
                         color: Theme.widgetTextColor
@@ -211,6 +211,20 @@ BasePill {
                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
                     color: Theme.widgetTextColor
                     anchors.baseline: dateText.baseline
+                    width: timeTextMetrics.width
+                    horizontalAlignment: Text.AlignHCenter
+                    TextMetrics {
+                        id: timeTextMetrics
+                        font: timeText.font
+                        text: {
+                            const format = SettingsData.getEffectiveTimeFormat();
+                            if (SettingsData.use24HourClock) {
+                                return SettingsData.showSeconds ? "88:88:88" : "88:88";
+                            } else {
+                                return SettingsData.showSeconds ? "88:88:88 PM" : "88:88 PM";
+                            }
+                        }
+                    }
                 }
 
                 StyledText {
