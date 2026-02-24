@@ -28,7 +28,33 @@ Item {
         return pos === SettingsData.Position.Left || pos === SettingsData.Position.Right;
     }
 
+    Timer {
+        id: horizontalBarChangeDebounce
+        interval: 500
+        repeat: false
+        onTriggered: {
+            const verticalBars = SettingsData.barConfigs.filter(cfg => {
+                const pos = cfg.position ?? SettingsData.Position.Top;
+                return pos === SettingsData.Position.Left || pos === SettingsData.Position.Right;
+            });
+
+            verticalBars.forEach(bar => {
+                if (!bar.enabled)
+                    return;
+                SettingsData.updateBarConfig(bar.id, {
+                    enabled: false
+                });
+                Qt.callLater(() => SettingsData.updateBarConfig(bar.id, {
+                        enabled: true
+                    }));
+            });
+        }
+    }
+
     function notifyHorizontalBarChange() {
+        if (selectedBarIsVertical)
+            return;
+        horizontalBarChangeDebounce.restart();
     }
 
     function createNewBar() {
@@ -66,7 +92,12 @@ Item {
             widgetOutlineColor: defaultBar.widgetOutlineColor || "primary",
             widgetOutlineOpacity: defaultBar.widgetOutlineOpacity ?? 1.0,
             widgetOutlineThickness: defaultBar.widgetOutlineThickness ?? 1,
+            widgetPadding: defaultBar.widgetPadding ?? 8,
+            maximizeWidgetIcons: defaultBar.maximizeWidgetIcons ?? false,
+            maximizeWidgetText: defaultBar.maximizeWidgetText ?? false,
+            removeWidgetPadding: defaultBar.removeWidgetPadding ?? false,
             fontScale: defaultBar.fontScale ?? 1.0,
+            iconScale: defaultBar.iconScale ?? 1.0,
             autoHide: defaultBar.autoHide ?? false,
             autoHideDelay: defaultBar.autoHideDelay ?? 250,
             showOnWindowsOpen: defaultBar.showOnWindowsOpen ?? false,
@@ -563,7 +594,6 @@ Item {
                             SettingsData.updateBarConfig(selectedBarId, {
                                 autoHideDelay: newValue
                             });
-                            notifyHorizontalBarChange();
                         }
 
                         Binding {
@@ -583,7 +613,6 @@ Item {
                             SettingsData.updateBarConfig(selectedBarId, {
                                 showOnWindowsOpen: toggled
                             });
-                            notifyHorizontalBarChange();
                         }
                     }
                 }
@@ -637,7 +666,6 @@ Item {
                         SettingsData.updateBarConfig(selectedBarId, {
                             openOnOverview: toggled
                         });
-                        notifyHorizontalBarChange();
                     }
                 }
             }
@@ -754,7 +782,6 @@ Item {
                         SettingsData.updateBarConfig(selectedBarId, {
                             spacing: finalValue
                         });
-                        notifyHorizontalBarChange();
                     }
 
                     Binding {
@@ -776,7 +803,6 @@ Item {
                         SettingsData.updateBarConfig(selectedBarId, {
                             bottomGap: finalValue
                         });
-                        notifyHorizontalBarChange();
                     }
 
                     Binding {
@@ -798,7 +824,6 @@ Item {
                         SettingsData.updateBarConfig(selectedBarId, {
                             innerPadding: finalValue
                         });
-                        notifyHorizontalBarChange();
                     }
 
                     Binding {
@@ -811,13 +836,12 @@ Item {
 
                 SettingsSliderRow {
                     id: widgetPaddingSlider
-                    text: I18n.tr("Widget Padding Base")
-                    description: I18n.tr("Material 3 Expressive padding")
-                    value: selectedBarConfig?.widgetPadding ?? 12
+                    text: I18n.tr("Padding")
+                    value: selectedBarConfig?.widgetPadding ?? 8
                     minimum: 0
                     maximum: 32
                     unit: "px"
-                    defaultValue: 12
+                    defaultValue: 8
                     opacity: (selectedBarConfig?.removeWidgetPadding ?? false) ? 0.5 : 1.0
                     enabled: !(selectedBarConfig?.removeWidgetPadding ?? false)
                     onSliderValueChanged: newValue => {
@@ -848,7 +872,6 @@ Item {
                         SettingsData.updateBarConfig(selectedBarId, {
                             popupGapsAuto: checked
                         });
-                        notifyHorizontalBarChange();
                     }
                 }
 
@@ -877,7 +900,6 @@ Item {
                             SettingsData.updateBarConfig(selectedBarId, {
                                 popupGapsManual: finalValue
                             });
-                            notifyHorizontalBarChange();
                         }
 
                         Binding {
@@ -886,6 +908,107 @@ Item {
                             value: selectedBarConfig?.popupGapsManual ?? 4
                             restoreMode: Binding.RestoreBinding
                         }
+                    }
+                }
+            }
+
+            SettingsSliderCard {
+                id: fontScaleSliderCard
+                iconName: "text_fields"
+                title: I18n.tr("Font Scale")
+                description: I18n.tr("Scale DankBar font sizes independently")
+                visible: selectedBarConfig?.enabled
+                minimum: 50
+                maximum: 200
+                value: Math.round((selectedBarConfig?.fontScale ?? 1.0) * 100)
+                unit: "%"
+                defaultValue: 100
+                onSliderDragFinished: finalValue => {
+                    SettingsData.updateBarConfig(selectedBarId, {
+                        fontScale: finalValue / 100
+                    });
+                }
+
+                Binding {
+                    target: fontScaleSliderCard
+                    property: "value"
+                    value: Math.round((selectedBarConfig?.fontScale ?? 1.0) * 100)
+                    restoreMode: Binding.RestoreBinding
+                }
+            }
+
+            SettingsSliderCard {
+                id: iconScaleSliderCard
+                iconName: "interests"
+                title: I18n.tr("Icon Scale")
+                description: I18n.tr("Scale DankBar icon sizes independently")
+                visible: selectedBarConfig?.enabled
+                minimum: 50
+                maximum: 200
+                value: Math.round((selectedBarConfig?.iconScale ?? 1.0) * 100)
+                unit: "%"
+                defaultValue: 100
+                onSliderDragFinished: finalValue => {
+                    SettingsData.updateBarConfig(selectedBarId, {
+                        iconScale: finalValue / 100
+                    });
+                }
+
+                Binding {
+                    target: iconScaleSliderCard
+                    property: "value"
+                    value: Math.round((selectedBarConfig?.iconScale ?? 1.0) * 100)
+                    restoreMode: Binding.RestoreBinding
+                }
+            }
+
+            SettingsCard {
+                iconName: "opacity"
+                title: I18n.tr("Transparency")
+                settingKey: "barTransparency"
+                visible: selectedBarConfig?.enabled
+
+                SettingsSliderRow {
+                    id: barTransparencySlider
+                    text: I18n.tr("Bar Transparency")
+                    value: (selectedBarConfig?.transparency ?? 1.0) * 100
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    defaultValue: 100
+                    onSliderDragFinished: finalValue => {
+                        SettingsData.updateBarConfig(selectedBarId, {
+                            transparency: finalValue / 100
+                        });
+                    }
+
+                    Binding {
+                        target: barTransparencySlider
+                        property: "value"
+                        value: (selectedBarConfig?.transparency ?? 1.0) * 100
+                        restoreMode: Binding.RestoreBinding
+                    }
+                }
+
+                SettingsSliderRow {
+                    id: widgetTransparencySlider
+                    text: I18n.tr("Widget Transparency")
+                    value: (selectedBarConfig?.widgetTransparency ?? 1.0) * 100
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    defaultValue: 100
+                    onSliderDragFinished: finalValue => {
+                        SettingsData.updateBarConfig(selectedBarId, {
+                            widgetTransparency: finalValue / 100
+                        });
+                    }
+
+                    Binding {
+                        target: widgetTransparencySlider
+                        property: "value"
+                        value: (selectedBarConfig?.widgetTransparency ?? 1.0) * 100
+                        restoreMode: Binding.RestoreBinding
                     }
                 }
             }
@@ -1297,111 +1420,6 @@ Item {
                         value: selectedBarConfig?.widgetOutlineThickness ?? 1
                         restoreMode: Binding.RestoreBinding
                     }
-                }
-            }
-
-            SettingsCard {
-                iconName: "opacity"
-                title: I18n.tr("Transparency")
-                settingKey: "barTransparency"
-                visible: selectedBarConfig?.enabled
-
-                SettingsSliderRow {
-                    id: barTransparencySlider
-                    text: I18n.tr("Bar Transparency")
-                    value: (selectedBarConfig?.transparency ?? 1.0) * 100
-                    minimum: 0
-                    maximum: 100
-                    unit: "%"
-                    defaultValue: 100
-                    onSliderDragFinished: finalValue => {
-                        SettingsData.updateBarConfig(selectedBarId, {
-                            transparency: finalValue / 100
-                        });
-                        notifyHorizontalBarChange();
-                    }
-
-                    Binding {
-                        target: barTransparencySlider
-                        property: "value"
-                        value: (selectedBarConfig?.transparency ?? 1.0) * 100
-                        restoreMode: Binding.RestoreBinding
-                    }
-                }
-
-                SettingsSliderRow {
-                    id: widgetTransparencySlider
-                    text: I18n.tr("Widget Transparency")
-                    value: (selectedBarConfig?.widgetTransparency ?? 1.0) * 100
-                    minimum: 0
-                    maximum: 100
-                    unit: "%"
-                    defaultValue: 100
-                    onSliderDragFinished: finalValue => {
-                        SettingsData.updateBarConfig(selectedBarId, {
-                            widgetTransparency: finalValue / 100
-                        });
-                        notifyHorizontalBarChange();
-                    }
-
-                    Binding {
-                        target: widgetTransparencySlider
-                        property: "value"
-                        value: (selectedBarConfig?.widgetTransparency ?? 1.0) * 100
-                        restoreMode: Binding.RestoreBinding
-                    }
-                }
-            }
-
-            SettingsSliderCard {
-                id: fontScaleSliderCard
-                iconName: "text_fields"
-                title: I18n.tr("Font Scale")
-                description: I18n.tr("Scale DankBar font sizes independently")
-                visible: selectedBarConfig?.enabled
-                minimum: 50
-                maximum: 200
-                value: Math.round((selectedBarConfig?.fontScale ?? 1.0) * 100)
-                unit: "%"
-                defaultValue: 100
-                onSliderDragFinished: finalValue => {
-                    SettingsData.updateBarConfig(selectedBarId, {
-                        fontScale: finalValue / 100
-                    });
-                    notifyHorizontalBarChange();
-                }
-
-                Binding {
-                    target: fontScaleSliderCard
-                    property: "value"
-                    value: Math.round((selectedBarConfig?.fontScale ?? 1.0) * 100)
-                    restoreMode: Binding.RestoreBinding
-                }
-            }
-
-            SettingsSliderCard {
-                id: iconScaleSliderCard
-                iconName: "interests"
-                title: I18n.tr("Icon Scale")
-                description: I18n.tr("Scale DankBar icon sizes independently")
-                visible: selectedBarConfig?.enabled
-                minimum: 50
-                maximum: 200
-                value: Math.round((selectedBarConfig?.iconScale ?? 1.0) * 100)
-                unit: "%"
-                defaultValue: 100
-                onSliderDragFinished: finalValue => {
-                    SettingsData.updateBarConfig(selectedBarId, {
-                        iconScale: finalValue / 100
-                    });
-                    notifyHorizontalBarChange();
-                }
-
-                Binding {
-                    target: iconScaleSliderCard
-                    property: "value"
-                    value: Math.round((selectedBarConfig?.iconScale ?? 1.0) * 100)
-                    restoreMode: Binding.RestoreBinding
                 }
             }
         }
