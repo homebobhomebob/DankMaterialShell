@@ -73,7 +73,7 @@ Rectangle {
                     return Theme.error;
                 if (root.usagePercent > 75)
                     return Theme.warning;
-                return Theme.primary;
+                return Theme.ccTileInactiveIcon;
             }
         }
 
@@ -99,10 +99,15 @@ Rectangle {
                         return Theme.error;
                     if (root.usagePercent > 75)
                         return Theme.warning;
-                    return Theme.primary;
+                    return Theme.ccTileInactiveIcon;
                 }
             }
         }
+    }
+
+    DankRipple {
+        id: ripple
+        cornerRadius: root.radius
     }
 
     MouseArea {
@@ -111,6 +116,7 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         enabled: root.enabled
+        onPressed: mouse => ripple.trigger(mouse.x, mouse.y)
         onClicked: root.clicked()
     }
 

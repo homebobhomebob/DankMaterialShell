@@ -45,11 +45,12 @@ Singleton {
         if (typeof SessionData === "undefined")
             return "";
 
+        var monitors = SessionData.monitorWallpapers;
         if (SessionData.perMonitorWallpaper) {
             var screens = Quickshell.screens;
             if (screens.length > 0) {
-                var firstMonitorWallpaper = SessionData.getMonitorWallpaper(screens[0].name);
-                return firstMonitorWallpaper || SessionData.wallpaperPath;
+                var s = screens[0];
+                return monitors[s.name] || (s.model ? monitors[s.model] : "") || SessionData.wallpaperPath;
             }
         }
 
@@ -59,6 +60,7 @@ Singleton {
         if (typeof SessionData === "undefined")
             return "";
 
+        var monitors = SessionData.monitorWallpapers;
         if (SessionData.perMonitorWallpaper) {
             var screens = Quickshell.screens;
             if (screens.length > 0) {
@@ -72,12 +74,20 @@ Singleton {
                     }
                 }
 
-                if (!targetMonitorExists) {
+                if (!targetMonitorExists)
                     targetMonitor = screens[0].name;
+
+                var s = null;
+                for (var j = 0; j < screens.length; j++) {
+                    if (screens[j].name === targetMonitor) {
+                        s = screens[j];
+                        break;
+                    }
                 }
 
-                var targetMonitorWallpaper = SessionData.getMonitorWallpaper(targetMonitor);
-                return targetMonitorWallpaper || SessionData.wallpaperPath;
+                if (s)
+                    return monitors[s.name] || (s.model ? monitors[s.model] : "") || SessionData.wallpaperPath;
+                return monitors[targetMonitor] || SessionData.wallpaperPath;
             }
         }
 
@@ -178,6 +188,8 @@ Singleton {
 
         if (typeof SettingsData !== "undefined" && SettingsData.currentThemeName) {
             switchTheme(SettingsData.currentThemeName, false, false);
+            const currentIsLight = (typeof SessionData !== "undefined") ? SessionData.isLightMode : false;
+            SettingsData.updateCosmicThemeMode(currentIsLight);
         }
 
         if (typeof SessionData !== "undefined" && SessionData.themeModeAutoEnabled) {
@@ -271,10 +283,7 @@ Singleton {
 
         function onLatitudeChanged() {
             if (root.themeModeAutomationActive && SessionData.themeModeAutoMode === "location") {
-                if (!SessionData.nightModeUseIPLocation &&
-                    SessionData.latitude !== 0.0 &&
-                    SessionData.longitude !== 0.0 &&
-                    typeof DMSService !== "undefined") {
+                if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0 && typeof DMSService !== "undefined") {
                     DMSService.sendRequest("wayland.gamma.setLocation", {
                         "latitude": SessionData.latitude,
                         "longitude": SessionData.longitude
@@ -287,10 +296,7 @@ Singleton {
 
         function onLongitudeChanged() {
             if (root.themeModeAutomationActive && SessionData.themeModeAutoMode === "location") {
-                if (!SessionData.nightModeUseIPLocation &&
-                    SessionData.latitude !== 0.0 &&
-                    SessionData.longitude !== 0.0 &&
-                    typeof DMSService !== "undefined") {
+                if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0 && typeof DMSService !== "undefined") {
                     DMSService.sendRequest("wayland.gamma.setLocation", {
                         "latitude": SessionData.latitude,
                         "longitude": SessionData.longitude
@@ -307,8 +313,7 @@ Singleton {
                     DMSService.sendRequest("wayland.gamma.setUseIPLocation", {
                         "use": SessionData.nightModeUseIPLocation
                     }, response => {
-                        if (!response.error && !SessionData.nightModeUseIPLocation &&
-                            SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
+                        if (!response.error && !SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
                             DMSService.sendRequest("wayland.gamma.setLocation", {
                                 "latitude": SessionData.latitude,
                                 "longitude": SessionData.longitude
@@ -325,11 +330,7 @@ Singleton {
     // React to gamma backend's isDay state changes for location-based mode
     Connections {
         target: DisplayService
-        enabled: typeof DisplayService !== "undefined" &&
-                 typeof SessionData !== "undefined" &&
-                 SessionData.themeModeAutoEnabled &&
-                 SessionData.themeModeAutoMode === "location" &&
-                 !themeAutoBackendAvailable()
+        enabled: typeof DisplayService !== "undefined" && typeof SessionData !== "undefined" && SessionData.themeModeAutoEnabled && SessionData.themeModeAutoMode === "location" && !themeAutoBackendAvailable()
 
         function onGammaIsDayChanged() {
             if (root.isLightMode !== DisplayService.gammaIsDay) {
@@ -343,7 +344,8 @@ Singleton {
         enabled: typeof DMSService !== "undefined" && typeof SessionData !== "undefined"
 
         function onLoginctlEvent(event) {
-            if (!SessionData.themeModeAutoEnabled) return;
+            if (!SessionData.themeModeAutoEnabled)
+                return;
             if (event.event === "unlock" || event.event === "resume") {
                 if (!themeAutoBackendAvailable()) {
                     root.evaluateThemeMode();
@@ -462,39 +464,39 @@ Singleton {
 
     readonly property var availableMatugenSchemes: [({
                 "value": "scheme-tonal-spot",
-                "label": "Tonal Spot",
+                "label": I18n.tr("Tonal Spot", "matugen color scheme option"),
                 "description": I18n.tr("Balanced palette with focused accents (default).")
             }), ({
                 "value": "scheme-vibrant",
-                "label": "Vibrant",
+                "label": I18n.tr("Vibrant", "matugen color scheme option"),
                 "description": I18n.tr("Lively palette with saturated accents.")
             }), ({
                 "value": "scheme-content",
-                "label": "Content",
+                "label": I18n.tr("Content", "matugen color scheme option"),
                 "description": I18n.tr("Derives colors that closely match the underlying image.")
             }), ({
                 "value": "scheme-expressive",
-                "label": "Expressive",
+                "label": I18n.tr("Expressive", "matugen color scheme option"),
                 "description": I18n.tr("Vibrant palette with playful saturation.")
             }), ({
                 "value": "scheme-fidelity",
-                "label": "Fidelity",
+                "label": I18n.tr("Fidelity", "matugen color scheme option"),
                 "description": I18n.tr("High-fidelity palette that preserves source hues.")
             }), ({
                 "value": "scheme-fruit-salad",
-                "label": "Fruit Salad",
+                "label": I18n.tr("Fruit Salad", "matugen color scheme option"),
                 "description": I18n.tr("Colorful mix of bright contrasting accents.")
             }), ({
                 "value": "scheme-monochrome",
-                "label": "Monochrome",
+                "label": I18n.tr("Monochrome", "matugen color scheme option"),
                 "description": I18n.tr("Minimal palette built around a single hue.")
             }), ({
                 "value": "scheme-neutral",
-                "label": "Neutral",
+                "label": I18n.tr("Neutral", "matugen color scheme option"),
                 "description": I18n.tr("Muted palette with subdued, calming tones.")
             }), ({
                 "value": "scheme-rainbow",
-                "label": "Rainbow",
+                "label": I18n.tr("Rainbow", "matugen color scheme option"),
                 "description": I18n.tr("Diverse palette spanning the full spectrum.")
             })]
 
@@ -564,6 +566,110 @@ Singleton {
     property color errorHover: Qt.rgba(error.r, error.g, error.b, 0.12)
     property color errorPressed: Qt.rgba(error.r, error.g, error.b, 0.16)
 
+    readonly property color ccTileActiveBg: {
+        switch (SettingsData.controlCenterTileColorMode) {
+        case "primaryContainer":
+            return primaryContainer;
+        case "secondary":
+            return secondary;
+        case "surfaceVariant":
+            return surfaceVariant;
+        default:
+            return primary;
+        }
+    }
+
+    readonly property color ccTileActiveText: {
+        switch (SettingsData.controlCenterTileColorMode) {
+        case "primaryContainer":
+            return primary;
+        case "secondary":
+            return surfaceText;
+        case "surfaceVariant":
+            return surfaceText;
+        default:
+            return primaryText;
+        }
+    }
+
+    readonly property color ccTileInactiveIcon: {
+        switch (SettingsData.controlCenterTileColorMode) {
+        case "primaryContainer":
+            return primary;
+        case "secondary":
+            return secondary;
+        case "surfaceVariant":
+            return surfaceText;
+        default:
+            return primary;
+        }
+    }
+
+    readonly property color ccTileRing: {
+        switch (SettingsData.controlCenterTileColorMode) {
+        case "primaryContainer":
+            return Qt.rgba(primary.r, primary.g, primary.b, 0.22);
+        case "secondary":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.22);
+        case "surfaceVariant":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.22);
+        default:
+            return Qt.rgba(primaryText.r, primaryText.g, primaryText.b, 0.22);
+        }
+    }
+
+    readonly property color buttonBg: {
+        switch (SettingsData.buttonColorMode) {
+        case "primaryContainer":
+            return primaryContainer;
+        case "secondary":
+            return secondary;
+        case "surfaceVariant":
+            return surfaceVariant;
+        default:
+            return primary;
+        }
+    }
+
+    readonly property color buttonText: {
+        switch (SettingsData.buttonColorMode) {
+        case "primaryContainer":
+            return primary;
+        case "secondary":
+            return surfaceText;
+        case "surfaceVariant":
+            return surfaceText;
+        default:
+            return primaryText;
+        }
+    }
+
+    readonly property color buttonHover: {
+        switch (SettingsData.buttonColorMode) {
+        case "primaryContainer":
+            return Qt.rgba(primary.r, primary.g, primary.b, 0.12);
+        case "secondary":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.12);
+        case "surfaceVariant":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.12);
+        default:
+            return primaryHover;
+        }
+    }
+
+    readonly property color buttonPressed: {
+        switch (SettingsData.buttonColorMode) {
+        case "primaryContainer":
+            return Qt.rgba(primary.r, primary.g, primary.b, 0.16);
+        case "secondary":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.16);
+        case "surfaceVariant":
+            return Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.16);
+        default:
+            return primaryPressed;
+        }
+    }
+
     property color shadowMedium: Qt.rgba(0, 0, 0, 0.08)
     property color shadowStrong: Qt.rgba(0, 0, 0, 0.3)
 
@@ -608,13 +714,13 @@ Singleton {
     readonly property int currentAnimationSpeed: typeof SettingsData !== "undefined" ? SettingsData.animationSpeed : SettingsData.AnimationSpeed.Short
     readonly property var currentDurations: animationDurations[currentAnimationSpeed] || animationDurations[SettingsData.AnimationSpeed.Short]
 
-    property int shorterDuration: currentDurations.shorter
-    property int shortDuration: currentDurations.short
-    property int mediumDuration: currentDurations.medium
-    property int longDuration: currentDurations.long
-    property int extraLongDuration: currentDurations.extraLong
-    property int standardEasing: Easing.OutCubic
-    property int emphasizedEasing: Easing.OutQuart
+    readonly property int shorterDuration: (typeof SettingsData !== "undefined" && SettingsData.animationSpeed === SettingsData.AnimationSpeed.Custom) ? SettingsData.customAnimationDuration : currentDurations.shorter
+    readonly property int shortDuration: (typeof SettingsData !== "undefined" && SettingsData.animationSpeed === SettingsData.AnimationSpeed.Custom) ? SettingsData.customAnimationDuration : currentDurations.short
+    readonly property int mediumDuration: (typeof SettingsData !== "undefined" && SettingsData.animationSpeed === SettingsData.AnimationSpeed.Custom) ? SettingsData.customAnimationDuration : currentDurations.medium
+    readonly property int longDuration: (typeof SettingsData !== "undefined" && SettingsData.animationSpeed === SettingsData.AnimationSpeed.Custom) ? SettingsData.customAnimationDuration : currentDurations.long
+    readonly property int extraLongDuration: (typeof SettingsData !== "undefined" && SettingsData.animationSpeed === SettingsData.AnimationSpeed.Custom) ? SettingsData.customAnimationDuration : currentDurations.extraLong
+    readonly property int standardEasing: Easing.OutCubic
+    readonly property int emphasizedEasing: Easing.OutQuart
 
     readonly property var expressiveCurves: {
         "emphasized": [0.05, 0, 2 / 15, 0.06, 1 / 6, 0.4, 5 / 24, 0.82, 0.25, 1, 1, 1],
@@ -670,6 +776,77 @@ Singleton {
             "expressiveDefaultSpatial": baseDuration,
             "expressiveEffects": baseDuration * 0.4
         };
+    }
+
+    readonly property int notificationAnimationBaseDuration: {
+        if (typeof SettingsData === "undefined")
+            return 200;
+        if (SettingsData.notificationAnimationSpeed === SettingsData.AnimationSpeed.None)
+            return 0;
+        if (SettingsData.notificationAnimationSpeed === SettingsData.AnimationSpeed.Custom)
+            return SettingsData.notificationCustomAnimationDuration;
+        const presetMap = [0, 200, 400, 600];
+        return presetMap[SettingsData.notificationAnimationSpeed] ?? 200;
+    }
+
+    readonly property int notificationEnterDuration: {
+        const base = notificationAnimationBaseDuration;
+        return base === 0 ? 0 : Math.round(base * 0.875);
+    }
+
+    readonly property int notificationExitDuration: {
+        const base = notificationAnimationBaseDuration;
+        return base === 0 ? 0 : Math.round(base * 0.75);
+    }
+
+    readonly property int notificationExpandDuration: {
+        const base = notificationAnimationBaseDuration;
+        return base === 0 ? 0 : Math.round(base * 1.0);
+    }
+
+    readonly property int notificationCollapseDuration: {
+        const base = notificationAnimationBaseDuration;
+        return base === 0 ? 0 : Math.round(base * 0.85);
+    }
+
+    readonly property real notificationIconSizeNormal: 56
+    readonly property real notificationIconSizeCompact: 48
+    readonly property real notificationExpandedIconSizeNormal: 48
+    readonly property real notificationExpandedIconSizeCompact: 40
+    readonly property real notificationActionMinWidth: 48
+    readonly property real notificationButtonCornerRadius: cornerRadius / 2
+    readonly property real notificationHoverRevealMargin: spacingXL
+    readonly property real notificationContentSpacing: spacingXS
+    readonly property real notificationCardPadding: spacingM
+    readonly property real notificationCardPaddingCompact: spacingS
+
+    readonly property real stateLayerHover: 0.08
+    readonly property real stateLayerFocus: 0.12
+    readonly property real stateLayerPressed: 0.12
+    readonly property real stateLayerDrag: 0.16
+
+    readonly property int popoutAnimationDuration: {
+        if (typeof SettingsData === "undefined")
+            return 150;
+        if (SettingsData.syncComponentAnimationSpeeds) {
+            return Math.min(currentAnimationBaseDuration, 1000);
+        }
+        const presetMap = [0, 150, 300, 500];
+        if (SettingsData.popoutAnimationSpeed === SettingsData.AnimationSpeed.Custom)
+            return SettingsData.popoutCustomAnimationDuration;
+        return presetMap[SettingsData.popoutAnimationSpeed] ?? 150;
+    }
+
+    readonly property int modalAnimationDuration: {
+        if (typeof SettingsData === "undefined")
+            return 150;
+        if (SettingsData.syncComponentAnimationSpeeds) {
+            return Math.min(currentAnimationBaseDuration, 1000);
+        }
+        const presetMap = [0, 150, 300, 500];
+        if (SettingsData.modalAnimationSpeed === SettingsData.AnimationSpeed.Custom)
+            return SettingsData.modalCustomAnimationDuration;
+        return presetMap[SettingsData.modalAnimationSpeed] ?? 150;
     }
 
     property real cornerRadius: {
@@ -784,13 +961,14 @@ Singleton {
         }
 
         if (!isGreeterMode) {
-            // Skip with matugen because, our script runner will do it.
             if (!matugenAvailable) {
                 PortalService.setLightMode(light);
             }
+            if (typeof SettingsData !== "undefined") {
+                SettingsData.updateCosmicThemeMode(light);
+            }
             generateSystemThemesFromCurrentTheme();
         }
-
     }
 
     function toggleLightMode(savePrefs = true) {
@@ -844,7 +1022,7 @@ Singleton {
             if (themeData.variants.type === "multi" && themeData.variants.flavors && themeData.variants.accents) {
                 const defaults = themeData.variants.defaults || {};
                 const modeDefaults = defaults[colorMode] || defaults.dark || {};
-                const stored = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, modeDefaults) : modeDefaults;
+                const stored = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, modeDefaults, colorMode) : modeDefaults;
                 var flavorId = stored.flavor || modeDefaults.flavor || "";
                 const accentId = stored.accent || modeDefaults.accent || "";
                 var flavor = findVariant(themeData.variants.flavors, flavorId);
@@ -991,21 +1169,23 @@ Singleton {
         return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) < 0.5;
     }
 
-    function barIconSize(barThickness, offset, noBackground) {
+    function barIconSize(barThickness, offset, maximizeIcon, iconScale) {
         const defaultOffset = offset !== undefined ? offset : -6;
-        const size = (noBackground ?? false) ? iconSizeLarge : iconSize;
+        const size = (maximizeIcon ?? false) ? iconSizeLarge : iconSize;
+        const s = iconScale !== undefined ? iconScale : 1.0;
 
-        return Math.round((barThickness / 48) * (size + defaultOffset));
+        return Math.round((barThickness / 48) * (size + defaultOffset) * s);
     }
 
-    function barTextSize(barThickness, fontScale) {
+    function barTextSize(barThickness, fontScale, maximizeText) {
         const scale = barThickness / 48;
         const dankBarScale = fontScale !== undefined ? fontScale : 1.0;
+        const maxScale = (maximizeText ?? false) ? 1.5 : 1.0;
         if (scale <= 0.75)
-            return Math.round(fontSizeSmall * 0.9 * dankBarScale);
+            return Math.round(fontSizeSmall * 0.9 * dankBarScale * maxScale);
         if (scale >= 1.25)
-            return Math.round(fontSizeMedium * dankBarScale);
-        return Math.round(fontSizeSmall * dankBarScale);
+            return Math.round(fontSizeMedium * dankBarScale * maxScale);
+        return Math.round(fontSizeSmall * dankBarScale * maxScale);
     }
 
     function getBatteryIcon(level, isCharging, batteryAvailable) {
@@ -1061,26 +1241,26 @@ Singleton {
     function getPowerProfileLabel(profile) {
         switch (profile) {
         case 0:
-            return "Power Saver";
+            return I18n.tr("Power Saver", "power profile option");
         case 1:
-            return "Balanced";
+            return I18n.tr("Balanced", "power profile option");
         case 2:
-            return "Performance";
+            return I18n.tr("Performance", "power profile option");
         default:
-            return "Unknown";
+            return I18n.tr("Unknown", "power profile option");
         }
     }
 
     function getPowerProfileDescription(profile) {
         switch (profile) {
         case 0:
-            return "Extend battery life";
+            return I18n.tr("Extend battery life", "power profile description");
         case 1:
-            return "Balance power and performance";
+            return I18n.tr("Balance power and performance", "power profile description");
         case 2:
-            return "Prioritize performance";
+            return I18n.tr("Prioritize performance", "power profile description");
         default:
-            return "Custom power profile";
+            return I18n.tr("Custom power profile", "power profile description");
         }
     }
 
@@ -1187,7 +1367,7 @@ Singleton {
                     skipTemplates.push("kcolorscheme");
                 if (!SettingsData.matugenTemplateVscode)
                     skipTemplates.push("vscode");
-		if (!SettingsData.matugenTemplateEmacs)
+                if (!SettingsData.matugenTemplateEmacs)
                     skipTemplates.push("emacs");
             }
             if (skipTemplates.length > 0) {
@@ -1238,8 +1418,8 @@ Singleton {
                         const defaults = customThemeRawData.variants.defaults || {};
                         const darkDefaults = defaults.dark || {};
                         const lightDefaults = defaults.light || defaults.dark || {};
-                        const storedDark = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, darkDefaults) : darkDefaults;
-                        const storedLight = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, lightDefaults) : lightDefaults;
+                        const storedDark = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, darkDefaults, "dark") : darkDefaults;
+                        const storedLight = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, lightDefaults, "light") : lightDefaults;
                         const darkFlavorId = storedDark.flavor || darkDefaults.flavor || "";
                         const lightFlavorId = storedLight.flavor || lightDefaults.flavor || "";
                         const accentId = storedDark.accent || darkDefaults.accent || "";
@@ -1695,10 +1875,7 @@ Singleton {
 
     // Theme mode automation functions
     function themeAutoBackendAvailable() {
-        return typeof DMSService !== "undefined" &&
-               DMSService.isConnected &&
-               Array.isArray(DMSService.capabilities) &&
-               DMSService.capabilities.includes("theme.auto");
+        return typeof DMSService !== "undefined" && DMSService.isConnected && Array.isArray(DMSService.capabilities) && DMSService.capabilities.includes("theme.auto");
     }
 
     function applyThemeAutoState(state) {
@@ -1731,7 +1908,9 @@ Singleton {
             return;
         }
 
-        DMSService.sendRequest("theme.auto.setMode", {"mode": "time"});
+        DMSService.sendRequest("theme.auto.setMode", {
+            "mode": "time"
+        });
 
         const shareSettings = SessionData.themeModeShareGammaSettings;
         const startHour = shareSettings ? SessionData.nightModeStartHour : SessionData.themeModeStartHour;
@@ -1750,7 +1929,9 @@ Singleton {
             }
         });
 
-        DMSService.sendRequest("theme.auto.setEnabled", {"enabled": true});
+        DMSService.sendRequest("theme.auto.setEnabled", {
+            "enabled": true
+        });
         DMSService.sendRequest("theme.auto.trigger", {});
     }
 
@@ -1769,12 +1950,18 @@ Singleton {
             return;
         }
 
-        DMSService.sendRequest("theme.auto.setMode", {"mode": "location"});
+        DMSService.sendRequest("theme.auto.setMode", {
+            "mode": "location"
+        });
 
         if (SessionData.nightModeUseIPLocation) {
-            DMSService.sendRequest("theme.auto.setUseIPLocation", {"use": true});
+            DMSService.sendRequest("theme.auto.setUseIPLocation", {
+                "use": true
+            });
         } else {
-            DMSService.sendRequest("theme.auto.setUseIPLocation", {"use": false});
+            DMSService.sendRequest("theme.auto.setUseIPLocation", {
+                "use": false
+            });
             if (SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
                 DMSService.sendRequest("theme.auto.setLocation", {
                     "latitude": SessionData.latitude,
@@ -1783,7 +1970,9 @@ Singleton {
             }
         }
 
-        DMSService.sendRequest("theme.auto.setEnabled", {"enabled": true});
+        DMSService.sendRequest("theme.auto.setEnabled", {
+            "enabled": true
+        });
         DMSService.sendRequest("theme.auto.trigger", {});
     }
 
@@ -1819,13 +2008,8 @@ Singleton {
             return;
         }
 
-        if (!SessionData.nightModeUseIPLocation &&
-            SessionData.latitude !== 0.0 &&
-            SessionData.longitude !== 0.0) {
-            const shouldBeLight = calculateIsDaytime(
-                SessionData.latitude,
-                SessionData.longitude
-            );
+        if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
+            const shouldBeLight = calculateIsDaytime(SessionData.latitude, SessionData.longitude);
             if (root.isLightMode !== shouldBeLight) {
                 root.setLightMode(shouldBeLight, true, true);
             }
@@ -1844,14 +2028,10 @@ Singleton {
     function evaluateTimeBasedThemeMode() {
         const shareSettings = SessionData.themeModeShareGammaSettings;
 
-        const startHour = shareSettings ?
-            SessionData.nightModeStartHour : SessionData.themeModeStartHour;
-        const startMinute = shareSettings ?
-            SessionData.nightModeStartMinute : SessionData.themeModeStartMinute;
-        const endHour = shareSettings ?
-            SessionData.nightModeEndHour : SessionData.themeModeEndHour;
-        const endMinute = shareSettings ?
-            SessionData.nightModeEndMinute : SessionData.themeModeEndMinute;
+        const startHour = shareSettings ? SessionData.nightModeStartHour : SessionData.themeModeStartHour;
+        const startMinute = shareSettings ? SessionData.nightModeStartMinute : SessionData.themeModeStartMinute;
+        const endHour = shareSettings ? SessionData.nightModeEndHour : SessionData.themeModeEndHour;
+        const endMinute = shareSettings ? SessionData.nightModeEndMinute : SessionData.themeModeEndMinute;
 
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -1877,7 +2057,7 @@ Singleton {
         const dayOfYear = Math.floor(diff / 86400000);
         const latRad = lat * Math.PI / 180;
 
-        const declination = 23.45 * Math.sin((360/365) * (dayOfYear - 81) * Math.PI / 180);
+        const declination = 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * Math.PI / 180);
         const declinationRad = declination * Math.PI / 180;
 
         const cosHourAngle = -Math.tan(latRad) * Math.tan(declinationRad);
@@ -1918,14 +2098,18 @@ Singleton {
         }
 
         if (SessionData.nightModeUseIPLocation) {
-            DMSService.sendRequest("wayland.gamma.setUseIPLocation", {"use": true}, response => {
+            DMSService.sendRequest("wayland.gamma.setUseIPLocation", {
+                "use": true
+            }, response => {
                 if (response?.error) {
                     console.warn("Theme automation: Failed to enable IP location", response.error);
                 }
             });
             return true;
         } else if (SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
-            DMSService.sendRequest("wayland.gamma.setUseIPLocation", {"use": false}, response => {
+            DMSService.sendRequest("wayland.gamma.setUseIPLocation", {
+                "use": false
+            }, response => {
                 if (!response.error) {
                     DMSService.sendRequest("wayland.gamma.setLocation", {
                         "latitude": SessionData.latitude,
@@ -1982,7 +2166,9 @@ Singleton {
     function stopThemeModeAutomation() {
         root.themeModeAutomationActive = false;
         if (typeof DMSService !== "undefined" && DMSService.isConnected) {
-            DMSService.sendRequest("theme.auto.setEnabled", {"enabled": false});
+            DMSService.sendRequest("theme.auto.setEnabled", {
+                "enabled": false
+            });
         }
     }
 }

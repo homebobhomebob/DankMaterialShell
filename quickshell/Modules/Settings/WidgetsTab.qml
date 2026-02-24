@@ -392,6 +392,12 @@ Item {
             widgetObj.showPrinterIcon = SettingsData.controlCenterShowPrinterIcon;
             widgetObj.showScreenSharingIcon = SettingsData.controlCenterShowScreenSharingIcon;
         }
+        if (widgetId === "runningApps") {
+            widgetObj.runningAppsCompactMode = SettingsData.runningAppsCompactMode;
+            widgetObj.runningAppsGroupByApp = SettingsData.runningAppsGroupByApp;
+            widgetObj.runningAppsCurrentWorkspace = SettingsData.runningAppsCurrentWorkspace;
+            widgetObj.runningAppsCurrentMonitor = false;
+        }
         if (widgetId === "diskUsage")
             widgetObj.mountPath = "/";
         if (widgetId === "cpuUsage" || widgetId === "memUsage" || widgetId === "cpuTemp" || widgetId === "gpuTemp")
@@ -419,7 +425,7 @@ Item {
             "id": widget.id,
             "enabled": widget.enabled
         };
-        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "minimumWidth", "showSwap", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon"];
+        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "minimumWidth", "showSwap", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "runningAppsGroupByApp", "runningAppsCurrentWorkspace", "runningAppsCurrentMonitor", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge"];
         for (var i = 0; i < keys.length; i++) {
             if (widget[keys[i]] !== undefined)
                 result[keys[i]] = widget[keys[i]];
@@ -530,6 +536,18 @@ Item {
         setWidgetsForSection(sectionId, widgets);
     }
 
+    function handleOverflowSettingChanged(sectionId, widgetIndex, settingName, value) {
+        var widgets = getWidgetsForSection(sectionId).slice();
+        if (widgetIndex < 0 || widgetIndex >= widgets.length) {
+            setWidgetsForSection(sectionId, widgets);
+            return;
+        }
+        var newWidget = cloneWidgetData(widgets[widgetIndex]);
+        newWidget[settingName] = value;
+        widgets[widgetIndex] = newWidget;
+        setWidgetsForSection(sectionId, widgets);
+    }
+
     function handleCompactModeChanged(sectionId, widgetId, value) {
         var widgets = getWidgetsForSection(sectionId).slice();
         for (var i = 0; i < widgets.length; i++) {
@@ -619,8 +637,20 @@ Item {
                     item.focusedWindowCompactMode = widget.focusedWindowCompactMode;
                 if (widget.runningAppsCompactMode !== undefined)
                     item.runningAppsCompactMode = widget.runningAppsCompactMode;
+                if (widget.runningAppsGroupByApp !== undefined)
+                    item.runningAppsGroupByApp = widget.runningAppsGroupByApp;
+                if (widget.runningAppsCurrentWorkspace !== undefined)
+                    item.runningAppsCurrentWorkspace = widget.runningAppsCurrentWorkspace;
+                if (widget.runningAppsCurrentMonitor !== undefined)
+                    item.runningAppsCurrentMonitor = widget.runningAppsCurrentMonitor;
                 if (widget.keyboardLayoutNameCompactMode !== undefined)
                     item.keyboardLayoutNameCompactMode = widget.keyboardLayoutNameCompactMode;
+                if (widget.barMaxVisibleApps !== undefined)
+                    item.barMaxVisibleApps = widget.barMaxVisibleApps;
+                if (widget.barMaxVisibleRunningApps !== undefined)
+                    item.barMaxVisibleRunningApps = widget.barMaxVisibleRunningApps;
+                if (widget.barShowOverflowBadge !== undefined)
+                    item.barShowOverflowBadge = widget.barShowOverflowBadge;
             }
             widgets.push(item);
         });
@@ -696,7 +726,7 @@ Item {
                 width: parent.width
                 height: barSelectorContent.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.width: 0
                 visible: hasMultipleBars
 
@@ -749,7 +779,7 @@ Item {
                 width: parent.width
                 height: widgetManagementHeader.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.width: 0
 
                 Column {
@@ -783,7 +813,7 @@ Item {
                         }
 
                         Rectangle {
-                            width: 80
+                            width: resetContentRow.implicitWidth + Theme.spacingM * 2
                             height: 28
                             radius: Theme.cornerRadius
                             color: resetArea.containsMouse ? Theme.surfacePressed : Theme.surfaceVariant
@@ -791,6 +821,7 @@ Item {
                             border.width: 0
 
                             Row {
+                                id: resetContentRow
                                 anchors.centerIn: parent
                                 spacing: Theme.spacingXS
 
@@ -849,7 +880,7 @@ Item {
                     width: parent.width
                     height: leftSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {
@@ -897,6 +928,9 @@ Item {
                         onCompactModeChanged: (widgetId, value) => {
                             widgetsTab.handleCompactModeChanged(sectionId, widgetId, value);
                         }
+                        onOverflowSettingChanged: (sectionId, widgetIndex, settingName, value) => {
+                            widgetsTab.handleOverflowSettingChanged(sectionId, widgetIndex, settingName, value);
+                        }
                     }
                 }
 
@@ -904,7 +938,7 @@ Item {
                     width: parent.width
                     height: centerSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {
@@ -952,6 +986,9 @@ Item {
                         onCompactModeChanged: (widgetId, value) => {
                             widgetsTab.handleCompactModeChanged(sectionId, widgetId, value);
                         }
+                        onOverflowSettingChanged: (sectionId, widgetIndex, settingName, value) => {
+                            widgetsTab.handleOverflowSettingChanged(sectionId, widgetIndex, settingName, value);
+                        }
                     }
                 }
 
@@ -959,7 +996,7 @@ Item {
                     width: parent.width
                     height: rightSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {
@@ -1006,6 +1043,9 @@ Item {
                         }
                         onCompactModeChanged: (widgetId, value) => {
                             widgetsTab.handleCompactModeChanged(sectionId, widgetId, value);
+                        }
+                        onOverflowSettingChanged: (sectionId, widgetIndex, settingName, value) => {
+                            widgetsTab.handleOverflowSettingChanged(sectionId, widgetIndex, settingName, value);
                         }
                     }
                 }

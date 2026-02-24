@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or improvement for DMS
+description: Suggest a new feature or improvement for DMS. Keep features focused on a single topic with clear benefits, examples, etc. Avoid vague or broad requests, they will be closed.
 labels:
   - enhancement
 body:
@@ -23,18 +23,25 @@ body:
       placeholder: Why is this feature important?
     validations:
       required: false
-  - type: checkboxes
+  - type: dropdown
     id: compositor
     attributes:
       label: Compositor(s)
       description: Is this feature specific to one or more compositors?
       options:
-        - label: All compositors
-        - label: Niri
-        - label: Hyprland
-        - label: MangoWC (dwl)
-        - label: Sway
-        - label: Other (specify below)
+        - All compositors
+        - Niri
+        - Hyprland
+        - MangoWC (dwl)
+        - Sway
+        - Other (specify below)
+    validations:
+      required: true
+  - type: input
+    id: compositor_other
+    attributes:
+      label: If Other, please specify
+      placeholder: e.g., Wayfire, Mutter, etc.
     validations:
       required: false
   - type: textarea

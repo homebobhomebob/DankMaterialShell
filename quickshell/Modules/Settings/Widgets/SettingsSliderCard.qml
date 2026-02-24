@@ -23,11 +23,11 @@ StyledRect {
     property int defaultValue: -1
 
     signal sliderValueChanged(int newValue)
-
+    signal sliderDragFinished(int finalValue)
     width: parent?.width ?? 0
     height: Theme.spacingL * 2 + contentColumn.height
     radius: Theme.cornerRadius
-    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+    color: Theme.surfaceContainerHigh
 
     Column {
         id: contentColumn
@@ -84,11 +84,12 @@ StyledRect {
                 iconName: "restart_alt"
                 iconSize: 20
                 visible: root.defaultValue >= 0 && slider.value !== root.defaultValue
-                backgroundColor: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                backgroundColor: Theme.surfaceContainerHigh
                 iconColor: Theme.surfaceVariantText
                 onClicked: {
                     slider.value = root.defaultValue;
                     root.sliderValueChanged(root.defaultValue);
+                    root.sliderDragFinished(root.defaultValue);
                 }
             }
         }
@@ -99,8 +100,9 @@ StyledRect {
             height: 32
             showValue: true
             wheelEnabled: false
-            thumbOutlineColor: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+            thumbOutlineColor: Theme.surfaceContainerHigh
             onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
+            onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
         }
     }
 }

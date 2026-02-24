@@ -38,7 +38,7 @@ BasePill {
 
                 DankIcon {
                     name: "developer_board"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.memoryUsage > 90) {
                             return Theme.tempDanger;
@@ -61,7 +61,7 @@ BasePill {
 
                         return DgopService.memoryUsage.toFixed(0);
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -69,7 +69,7 @@ BasePill {
                 StyledText {
                     visible: root.showSwap && DgopService.totalSwapKB > 0
                     text: root.swapUsage.toFixed(0)
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.surfaceVariantText
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -84,7 +84,7 @@ BasePill {
                 DankIcon {
                     id: ramIcon
                     name: "developer_board"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.memoryUsage > 90) {
                             return Theme.tempDanger;
@@ -109,16 +109,9 @@ BasePill {
                     width: implicitWidth
                     height: implicitHeight
 
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     StyledTextMetrics {
                         id: ramBaseline
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         text: {
                             if (!root.showSwap) {
                                 return "88%";
@@ -143,7 +136,7 @@ BasePill {
                             }
                             return ramText;
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
 
                         anchors.fill: parent
@@ -161,7 +154,8 @@ BasePill {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton
-        onPressed: {
+        onPressed: mouse => {
+            root.triggerRipple(this, mouse.x, mouse.y);
             DgopService.setSortBy("memory");
             ramClicked();
         }

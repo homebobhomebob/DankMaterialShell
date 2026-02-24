@@ -79,7 +79,7 @@ Item {
         }
 
         Component.onCompleted: {
-            if (entryType !== "image") {
+            if (entryType !== "image" || listView.height <= 0) {
                 return;
             }
 
@@ -93,22 +93,41 @@ Item {
             }
         }
 
+        Timer {
+            id: visibilityTimer
+            interval: 100
+            onTriggered: thumbnailImage.checkVisibility()
+        }
+
+        function checkVisibility() {
+            if (entryType !== "image" || listView.height <= 0 || isVisible) {
+                return;
+            }
+            const itemY = itemIndex * (ClipboardConstants.itemHeight + listView.spacing);
+            const viewTop = listView.contentY - ClipboardConstants.viewportBuffer;
+            const viewBottom = viewTop + listView.height + ClipboardConstants.extendedBuffer;
+            const nowVisible = (itemY + ClipboardConstants.itemHeight >= viewTop && itemY <= viewBottom);
+            if (nowVisible) {
+                isVisible = true;
+                tryLoadImage();
+            }
+        }
+
         Connections {
             target: listView
+
             function onContentYChanged() {
-                if (entryType !== "image") {
+                if (thumbnailImage.isVisible || entryType !== "image") {
                     return;
                 }
+                visibilityTimer.restart();
+            }
 
-                const itemY = itemIndex * (ClipboardConstants.itemHeight + listView.spacing);
-                const viewTop = listView.contentY - ClipboardConstants.viewportBuffer;
-                const viewBottom = viewTop + listView.height + ClipboardConstants.extendedBuffer;
-                const nowVisible = (itemY + ClipboardConstants.itemHeight >= viewTop && itemY <= viewBottom);
-
-                if (nowVisible && !thumbnailImage.isVisible) {
-                    thumbnailImage.isVisible = true;
-                    thumbnailImage.tryLoadImage();
+            function onHeightChanged() {
+                if (thumbnailImage.isVisible || entryType !== "image") {
+                    return;
                 }
+                visibilityTimer.restart();
             }
         }
     }
@@ -118,23 +137,23 @@ Item {
         anchors.margins: 2
         source: thumbnailImage
         maskEnabled: true
-        maskSource: clipboardCircularMask
+        maskSource: clipboardRoundedRectangularMask
         visible: entryType === "image" && thumbnailImage.status === Image.Ready && thumbnailImage.source != ""
         maskThresholdMin: 0.5
         maskSpreadAtMin: 1
     }
 
     Item {
-        id: clipboardCircularMask
-        width: ClipboardConstants.thumbnailSize - 4
-        height: ClipboardConstants.thumbnailSize - 4
+        id: clipboardRoundedRectangularMask
+        width: ClipboardConstants.thumbnailSize
+        height: ClipboardConstants.itemHeight - 4
         layer.enabled: true
         layer.smooth: true
         visible: false
 
         Rectangle {
             anchors.fill: parent
-            radius: width / 2
+            radius: Theme.cornerRadius / 2 // Thumbnail corner radius is divided by 2 so it doesnt look weird on large corner radius (eg: 32px)
             color: "black"
             antialiasing: true
         }

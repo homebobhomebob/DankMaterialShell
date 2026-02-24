@@ -11,14 +11,14 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.widgetThickness - root.horizontalPadding * 2
+            implicitWidth: notifIcon.width
             implicitHeight: root.widgetThickness - root.horizontalPadding * 2
 
             DankIcon {
                 id: notifIcon
                 anchors.centerIn: parent
                 name: SessionData.doNotDisturb ? "notifications_off" : "notifications"
-                size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.noBackground)
+                size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                 color: SessionData.doNotDisturb ? Theme.primary : (root.isActive ? Theme.primary : Theme.widgetIconColor)
             }
 

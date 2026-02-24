@@ -19,6 +19,7 @@ Item {
     property var rightWidgetsModel
 
     readonly property real innerPadding: barConfig?.innerPadding ?? 4
+    readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0
 
     property alias hLeftSection: hLeftSection
     property alias hCenterSection: hCenterSection
@@ -30,8 +31,8 @@ Item {
     anchors.fill: parent
     anchors.leftMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
     anchors.rightMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
-    anchors.topMargin: barWindow.isVertical ? (barWindow.hasAdjacentTopBar ? 0 : Theme.spacingXS) : 0
-    anchors.bottomMargin: barWindow.isVertical ? (barWindow.hasAdjacentBottomBar ? 0 : Theme.spacingXS) : 0
+    anchors.topMargin: barWindow.isVertical ? (barWindow.hasAdjacentTopBar ? outlineThickness : Theme.spacingXS) : 0
+    anchors.bottomMargin: barWindow.isVertical ? (barWindow.hasAdjacentBottomBar ? outlineThickness : Theme.spacingXS) : 0
     clip: false
 
     property int componentMapRevision: 0
@@ -102,7 +103,7 @@ Item {
                 }, (_, i) => i);
             }
             return DwlService.getVisibleTags(barWindow.screenName);
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const workspaces = I3.workspaces?.values || [];
             if (workspaces.length === 0)
                 return [
@@ -144,7 +145,7 @@ Item {
                 return 0;
             const activeTags = DwlService.getActiveTags(barWindow.screenName);
             return activeTags.length > 0 ? activeTags[0] : 0;
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
                 const focusedWs = I3.workspaces?.values?.find(ws => ws.focused === true);
                 return focusedWs ? focusedWs.num : 1;
@@ -193,7 +194,7 @@ Item {
             if (nextIndex !== validIndex) {
                 DwlService.switchToTag(barWindow.screenName, realWorkspaces[nextIndex]);
             }
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const currentWs = getCurrentWorkspace();
             const currentIndex = realWorkspaces.findIndex(ws => ws.num === currentWs);
             const validIndex = currentIndex === -1 ? 0 : currentIndex;
@@ -554,13 +555,57 @@ Item {
         id: clipboardComponent
 
         ClipboardButton {
+            id: clipboardWidget
             widgetThickness: barWindow.widgetThickness
             barThickness: barWindow.effectiveBarThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent)
             parentScreen: barWindow.screen
-            onClicked: {
-                clipboardHistoryModalPopup.toggle();
+            popoutTarget: {
+                clipboardHistoryPopoutLoader.active = true;
+                return clipboardHistoryPopoutLoader.item;
+            }
+
+            function openClipboardPopout(initialTab) {
+                clipboardHistoryPopoutLoader.active = true;
+                if (!clipboardHistoryPopoutLoader.item) {
+                    return;
+                }
+                const popout = clipboardHistoryPopoutLoader.item;
+                const effectiveBarConfig = topBarContent.barConfig;
+                const barPosition = barWindow.axis?.edge === "left" ? 2 : (barWindow.axis?.edge === "right" ? 3 : (barWindow.axis?.edge === "top" ? 0 : 1));
+                if (popout.setBarContext) {
+                    popout.setBarContext(barPosition, effectiveBarConfig?.bottomGap ?? 0);
+                }
+                if (popout.setTriggerPosition) {
+                    const globalPos = clipboardWidget.mapToItem(null, 0, 0);
+                    const pos = SettingsData.getPopupTriggerPosition(globalPos, barWindow.screen, barWindow.effectiveBarThickness, clipboardWidget.width, effectiveBarConfig?.spacing ?? 4, barPosition, effectiveBarConfig);
+                    const widgetSection = topBarContent.getWidgetSection(parent) || "right";
+                    popout.setTriggerPosition(pos.x, pos.y, pos.width, widgetSection, barWindow.screen, barPosition, barWindow.effectiveBarThickness, effectiveBarConfig?.spacing ?? 4, effectiveBarConfig);
+                }
+                if (initialTab) {
+                    popout.activeTab = initialTab;
+                }
+                PopoutManager.requestPopout(popout, undefined, "clipboard");
+            }
+
+            onClipboardClicked: openClipboardPopout("recents")
+
+            onShowSavedItemsRequested: openClipboardPopout("saved")
+
+            onClearAllRequested: {
+                clipboardHistoryPopoutLoader.active = true;
+                const popout = clipboardHistoryPopoutLoader.item;
+                if (!popout?.confirmDialog) {
+                    return;
+                }
+                const hasPinned = popout.pinnedCount > 0;
+                const message = hasPinned ? I18n.tr("This will delete all unpinned entries. %1 pinned entries will be kept.").arg(popout.pinnedCount) : I18n.tr("This will permanently delete all clipboard history.");
+                popout.confirmDialog.show(I18n.tr("Clear History?"), message, function () {
+                    if (popout && typeof popout.clearAll === "function") {
+                        popout.clearAll();
+                    }
+                }, function () {});
             }
         }
     }
@@ -597,24 +642,52 @@ Item {
             popoutTarget: appDrawerLoader.item
             parentScreen: barWindow.screen
             hyprlandOverviewLoader: barWindow ? barWindow.hyprlandOverviewLoader : null
-            onClicked: {
+
+            function _preparePopout() {
                 appDrawerLoader.active = true;
-                // Use topBarContent.barConfig directly since widget barConfig binding doesn't work in Components
+                if (!appDrawerLoader.item)
+                    return false;
                 const effectiveBarConfig = topBarContent.barConfig;
-                // Calculate barPosition from axis.edge
                 const barPosition = barWindow.axis?.edge === "left" ? 2 : (barWindow.axis?.edge === "right" ? 3 : (barWindow.axis?.edge === "top" ? 0 : 1));
-                if (appDrawerLoader.item && appDrawerLoader.item.setBarContext) {
+                if (appDrawerLoader.item.setBarContext)
                     appDrawerLoader.item.setBarContext(barPosition, effectiveBarConfig?.bottomGap ?? 0);
-                }
-                if (appDrawerLoader.item && appDrawerLoader.item.setTriggerPosition) {
+                if (appDrawerLoader.item.setTriggerPosition) {
                     const globalPos = launcherButton.visualContent.mapToItem(null, 0, 0);
                     const currentScreen = barWindow.screen;
                     const pos = SettingsData.getPopupTriggerPosition(globalPos, currentScreen, barWindow.effectiveBarThickness, launcherButton.visualWidth, effectiveBarConfig?.spacing ?? 4, barPosition, effectiveBarConfig);
                     appDrawerLoader.item.setTriggerPosition(pos.x, pos.y, pos.width, launcherButton.section, currentScreen, barPosition, barWindow.effectiveBarThickness, effectiveBarConfig?.spacing ?? 4, effectiveBarConfig);
                 }
-                if (appDrawerLoader.item) {
-                    PopoutManager.requestPopout(appDrawerLoader.item, undefined, "appDrawer");
-                }
+                return true;
+            }
+
+            function openWithMode(mode) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.openWithMode(mode);
+            }
+
+            function toggleWithMode(mode) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.toggleWithMode(mode);
+            }
+
+            function openWithQuery(query) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.openWithQuery(query);
+            }
+
+            function toggleWithQuery(query) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.toggleWithQuery(query);
+            }
+
+            onClicked: {
+                if (!_preparePopout())
+                    return;
+                PopoutManager.requestPopout(appDrawerLoader.item, undefined, "appDrawer");
             }
         }
     }
@@ -738,7 +811,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 0, (effectiveBarConfig?.id ?? "default") + "-0");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 0, (effectiveBarConfig?.id ?? "default") + "-" + section + "-0");
                 }
             }
         }
@@ -794,7 +867,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 1, (effectiveBarConfig?.id ?? "default") + "-1");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 1, (effectiveBarConfig?.id ?? "default") + "-" + section + "-1");
                 }
             }
         }
@@ -853,7 +926,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 3, (effectiveBarConfig?.id ?? "default") + "-3");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 3, (effectiveBarConfig?.id ?? "default") + "-" + section + "-3");
                 }
             }
         }

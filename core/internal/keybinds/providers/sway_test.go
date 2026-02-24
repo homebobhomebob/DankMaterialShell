@@ -15,8 +15,13 @@ func TestSwayProviderName(t *testing.T) {
 
 func TestSwayProviderDefaultPath(t *testing.T) {
 	provider := NewSwayProvider("")
-	if provider.configPath != "$HOME/.config/sway" {
-		t.Errorf("configPath = %q, want %q", provider.configPath, "$HOME/.config/sway")
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Skip("UserConfigDir not available")
+	}
+	expected := filepath.Join(configDir, "sway")
+	if provider.configPath != expected {
+		t.Errorf("configPath = %q, want %q", provider.configPath, expected)
 	}
 }
 
@@ -190,7 +195,7 @@ bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
 `
 
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -253,7 +258,7 @@ bindsym $mod+f fullscreen toggle
 bindsym $mod+1 workspace number 1
 `
 
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 

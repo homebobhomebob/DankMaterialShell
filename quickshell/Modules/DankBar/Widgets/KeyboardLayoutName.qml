@@ -12,31 +12,101 @@ BasePill {
     property var widgetData: null
     property bool compactMode: widgetData?.keyboardLayoutNameCompactMode !== undefined ? widgetData.keyboardLayoutNameCompactMode : SettingsData.keyboardLayoutNameCompactMode
     readonly property var langCodes: ({
-        "afrikaans": "af", "albanian": "sq", "amharic": "am", "arabic": "ar",
-        "armenian": "hy", "azerbaijani": "az", "basque": "eu", "belarusian": "be",
-        "bengali": "bn", "bosnian": "bs", "bulgarian": "bg", "burmese": "my",
-        "catalan": "ca", "chinese": "zh", "croatian": "hr", "czech": "cs",
-        "danish": "da", "dutch": "nl", "english": "en", "esperanto": "eo",
-        "estonian": "et", "filipino": "fil", "finnish": "fi", "french": "fr",
-        "galician": "gl", "georgian": "ka", "german": "de", "greek": "el",
-        "gujarati": "gu", "hausa": "ha", "hebrew": "he", "hindi": "hi",
-        "hungarian": "hu", "icelandic": "is", "igbo": "ig", "indonesian": "id",
-        "irish": "ga", "italian": "it", "japanese": "ja", "javanese": "jv",
-        "kannada": "kn", "kazakh": "kk", "khmer": "km", "korean": "ko",
-        "kurdish": "ku", "kyrgyz": "ky", "lao": "lo", "latvian": "lv",
-        "lithuanian": "lt", "luxembourgish": "lb", "macedonian": "mk", "malay": "ms",
-        "malayalam": "ml", "maltese": "mt", "maori": "mi", "marathi": "mr",
-        "mongolian": "mn", "nepali": "ne", "norwegian": "no", "pashto": "ps",
-        "persian": "fa", "iranian": "fa", "farsi": "fa", "polish": "pl",
-        "portuguese": "pt", "punjabi": "pa", "romanian": "ro", "russian": "ru",
-        "serbian": "sr", "sindhi": "sd", "sinhala": "si", "slovak": "sk",
-        "slovenian": "sl", "somali": "so", "spanish": "es", "swahili": "sw",
-        "swedish": "sv", "tajik": "tg", "tamil": "ta", "tatar": "tt",
-        "telugu": "te", "thai": "th", "tibetan": "bo", "turkish": "tr",
-        "turkmen": "tk", "ukrainian": "uk", "urdu": "ur", "uyghur": "ug",
-        "uzbek": "uz", "vietnamese": "vi", "welsh": "cy", "yiddish": "yi",
-        "yoruba": "yo", "zulu": "zu"
-    })
+            "afrikaans": "af",
+            "albanian": "sq",
+            "amharic": "am",
+            "arabic": "ar",
+            "armenian": "hy",
+            "azerbaijani": "az",
+            "basque": "eu",
+            "belarusian": "be",
+            "bengali": "bn",
+            "bosnian": "bs",
+            "bulgarian": "bg",
+            "burmese": "my",
+            "catalan": "ca",
+            "chinese": "zh",
+            "croatian": "hr",
+            "czech": "cs",
+            "danish": "da",
+            "dutch": "nl",
+            "english": "en",
+            "esperanto": "eo",
+            "estonian": "et",
+            "filipino": "fil",
+            "finnish": "fi",
+            "french": "fr",
+            "galician": "gl",
+            "georgian": "ka",
+            "german": "de",
+            "greek": "el",
+            "gujarati": "gu",
+            "hausa": "ha",
+            "hebrew": "he",
+            "hindi": "hi",
+            "hungarian": "hu",
+            "icelandic": "is",
+            "igbo": "ig",
+            "indonesian": "id",
+            "irish": "ga",
+            "italian": "it",
+            "japanese": "ja",
+            "javanese": "jv",
+            "kannada": "kn",
+            "kazakh": "kk",
+            "khmer": "km",
+            "korean": "ko",
+            "kurdish": "ku",
+            "kyrgyz": "ky",
+            "lao": "lo",
+            "latvian": "lv",
+            "lithuanian": "lt",
+            "luxembourgish": "lb",
+            "macedonian": "mk",
+            "malay": "ms",
+            "malayalam": "ml",
+            "maltese": "mt",
+            "maori": "mi",
+            "marathi": "mr",
+            "mongolian": "mn",
+            "nepali": "ne",
+            "norwegian": "no",
+            "pashto": "ps",
+            "persian": "fa",
+            "iranian": "fa",
+            "farsi": "fa",
+            "polish": "pl",
+            "portuguese": "pt",
+            "punjabi": "pa",
+            "romanian": "ro",
+            "russian": "ru",
+            "serbian": "sr",
+            "sindhi": "sd",
+            "sinhala": "si",
+            "slovak": "sk",
+            "slovenian": "sl",
+            "somali": "so",
+            "spanish": "es",
+            "swahili": "sw",
+            "swedish": "sv",
+            "tajik": "tg",
+            "tamil": "ta",
+            "tatar": "tt",
+            "telugu": "te",
+            "thai": "th",
+            "tibetan": "bo",
+            "turkish": "tr",
+            "turkmen": "tk",
+            "ukrainian": "uk",
+            "urdu": "ur",
+            "uyghur": "ug",
+            "uzbek": "uz",
+            "vietnamese": "vi",
+            "welsh": "cy",
+            "yiddish": "yi",
+            "yoruba": "yo",
+            "zulu": "zu"
+        })
     readonly property var validVariants: ["US", "UK", "GB", "AZERTY", "QWERTY", "Dvorak", "Colemak", "Mac", "Intl", "International"]
     property string currentLayout: {
         if (CompositorService.isNiri) {
@@ -61,7 +131,7 @@ BasePill {
 
                 DankIcon {
                     name: "keyboard"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -74,7 +144,7 @@ BasePill {
                         const code = root.langCodes[lang] || lang.substring(0, 2);
                         return code.toUpperCase();
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -107,7 +177,7 @@ BasePill {
                         }
                         return root.currentLayout;
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -119,6 +189,9 @@ BasePill {
         z: 1
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
+        onPressed: mouse => {
+            root.triggerRipple(this, mouse.x, mouse.y);
+        }
         onClicked: {
             if (CompositorService.isNiri) {
                 NiriService.cycleKeyboardLayout();
@@ -164,7 +237,7 @@ BasePill {
                         const variant = mainKeyboard.variant;
                         const index = mainKeyboard.active_layout_index;
 
-                        if (root.compactMode && layout && variant && index !== undefined) {
+                        if (root.compactMode && layout && index !== undefined) {
                             const layouts = mainKeyboard.layout.split(",");
                             const variants = mainKeyboard.variant.split(",");
                             const index = mainKeyboard.active_layout_index;
@@ -176,7 +249,7 @@ BasePill {
                                     root.currentLayout = layouts[index] + "-" + variants[index];
                                 }
                             } else {
-                                root.currentLayout = "Unknown";
+                                root.currentLayout = layouts[index];
                             }
                         } else if (mainKeyboard && mainKeyboard.active_keymap) {
                             root.currentLayout = mainKeyboard.active_keymap;

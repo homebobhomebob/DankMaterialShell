@@ -66,7 +66,7 @@ Item {
     property int defaultValue: -1
 
     signal sliderValueChanged(int newValue)
-
+    signal sliderDragFinished(int finalValue)
     width: parent?.width ?? 0
     height: headerRow.height + Theme.spacingXS + slider.height
 
@@ -123,11 +123,12 @@ Item {
                     iconName: "restart_alt"
                     iconSize: 20
                     visible: root.defaultValue >= 0 && slider.value !== root.defaultValue
-                    backgroundColor: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    backgroundColor: Theme.surfaceContainerHigh
                     iconColor: Theme.surfaceVariantText
                     onClicked: {
                         slider.value = root.defaultValue;
                         root.sliderValueChanged(root.defaultValue);
+                        root.sliderDragFinished(root.defaultValue);
                     }
                 }
             }
@@ -139,8 +140,9 @@ Item {
             height: 32
             showValue: true
             wheelEnabled: false
-            thumbOutlineColor: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+            thumbOutlineColor: Theme.surfaceContainerHigh
             onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
+            onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
         }
     }
 }

@@ -29,6 +29,15 @@ Item {
     property bool showTooltip: mouseArea.containsMouse && !dragging
     property var cachedDesktopEntry: null
     property real actualIconSize: 40
+    property bool shouldShowIndicator: {
+        if (!appData)
+            return false;
+        if (appData.type === "window")
+            return true;
+        if (appData.type === "grouped")
+            return appData.windowCount > 0;
+        return appData.isRunning;
+    }
     readonly property string coreIconColorOverride: SettingsData.dockLauncherLogoColorOverride
     readonly property bool coreIconHasCustomColor: coreIconColorOverride !== "" && coreIconColorOverride !== "primary" && coreIconColorOverride !== "surface"
     readonly property color effectiveCoreIconColor: {
@@ -206,7 +215,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         enabled: true
-        preventStealing: true
+        preventStealing: dragging || longPressing
         cursorShape: longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         onPressed: mouse => {
@@ -295,7 +304,7 @@ Item {
                         groupedToplevel.activate();
                 } else if (contextMenu) {
                     const shouldHidePin = appData.appId === "org.quickshell";
-                    contextMenu.showForButton(root, appData, root.height + 25, shouldHidePin, cachedDesktopEntry, parentDockScreen);
+                    contextMenu.showForButton(root, appData, root.height + 25, shouldHidePin, cachedDesktopEntry, parentDockScreen, dockApps);
                 }
                 break;
             }
@@ -342,7 +351,7 @@ Item {
                 case "grouped":
                     if (contextMenu) {
                         const shouldHidePin = appData.appId === "org.quickshell";
-                        contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen);
+                        contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen, dockApps);
                     }
                     break;
                 default:
@@ -365,7 +374,7 @@ Item {
                 if (!contextMenu)
                     return;
                 const shouldHidePin = appData.appId === "org.quickshell";
-                contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen);
+                contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen, dockApps);
             }
         }
     }
@@ -491,22 +500,14 @@ Item {
             anchors.top: SettingsData.dockPosition === SettingsData.Position.Top ? parent.top : undefined
             anchors.left: SettingsData.dockPosition === SettingsData.Position.Left ? parent.left : undefined
             anchors.right: SettingsData.dockPosition === SettingsData.Position.Right ? parent.right : undefined
-            anchors.bottomMargin: SettingsData.dockPosition === SettingsData.Position.Bottom ? -(SettingsData.dockSpacing / 2) : 0
-            anchors.topMargin: SettingsData.dockPosition === SettingsData.Position.Top ? -(SettingsData.dockSpacing / 2) : 0
-            anchors.leftMargin: SettingsData.dockPosition === SettingsData.Position.Left ? -(SettingsData.dockSpacing / 2) : 0
-            anchors.rightMargin: SettingsData.dockPosition === SettingsData.Position.Right ? -(SettingsData.dockSpacing / 2) : 0
+            anchors.bottomMargin: SettingsData.dockPosition === SettingsData.Position.Bottom ? -(SettingsData.dockSpacing / 2 + 1.4) : 0
+            anchors.topMargin: SettingsData.dockPosition === SettingsData.Position.Top ? -(SettingsData.dockSpacing / 2 + 1.4) : 0
+            anchors.leftMargin: SettingsData.dockPosition === SettingsData.Position.Left ? -(SettingsData.dockSpacing / 2 + 1.4) : 0
+            anchors.rightMargin: SettingsData.dockPosition === SettingsData.Position.Right ? -(SettingsData.dockSpacing / 2 + 1.4) : 0
 
             sourceComponent: SettingsData.dockPosition === SettingsData.Position.Left || SettingsData.dockPosition === SettingsData.Position.Right ? columnIndicator : rowIndicator
 
-            visible: {
-                if (!appData)
-                    return false;
-                if (appData.type === "window")
-                    return true;
-                if (appData.type === "grouped")
-                    return appData.windowCount > 0;
-                return appData.isRunning;
-            }
+            visible: root.shouldShowIndicator
         }
     }
 

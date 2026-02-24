@@ -251,13 +251,20 @@ Item {
         active: false
         asynchronous: false
 
+        Component.onCompleted: {
+            PopoutService.dankDashPopoutLoader = dankDashPopoutLoader;
+        }
+
+        onLoaded: {
+            if (item) {
+                PopoutService.dankDashPopout = item;
+                PopoutService._onDankDashPopoutLoaded();
+            }
+        }
+
         sourceComponent: Component {
             DankDashPopout {
                 id: dankDashPopout
-
-                Component.onCompleted: {
-                    PopoutService.dankDashPopout = dankDashPopout;
-                }
             }
         }
     }
@@ -330,6 +337,23 @@ Item {
 
             Component.onCompleted: {
                 PopoutService.wifiPasswordModal = wifiPasswordModalItem;
+            }
+        }
+    }
+
+    LazyLoader {
+        id: wifiQRCodeModalLoader
+        active: false
+
+        Component.onCompleted: {
+            PopoutService.wifiQRCodeModalLoader = wifiQRCodeModalLoader;
+        }
+
+        WifiQRCodeModal {
+            id: wifiQRCodeModalItem
+
+            Component.onCompleted: {
+                PopoutService.wifiQRCodeModal = wifiQRCodeModalItem;
             }
         }
     }
@@ -527,6 +551,20 @@ Item {
         }
     }
 
+    LazyLoader {
+        id: clipboardHistoryPopoutLoader
+
+        active: false
+
+        ClipboardHistoryPopout {
+            id: clipboardHistoryPopout
+
+            Component.onCompleted: {
+                PopoutService.clipboardHistoryPopout = clipboardHistoryPopout;
+            }
+        }
+    }
+
     ClipboardHistoryModal {
         id: clipboardHistoryModalPopup
 
@@ -553,7 +591,7 @@ Item {
         viewMode: SettingsData.appPickerViewMode || "grid"
 
         onViewModeChanged: {
-            SettingsData.set("appPickerViewMode", viewMode)
+            SettingsData.set("appPickerViewMode", viewMode);
         }
 
         function shellEscape(str) {
@@ -658,6 +696,18 @@ Item {
 
         WorkspaceRenameModal {
             id: workspaceRenameModal
+        }
+    }
+
+    LazyLoader {
+        id: windowRuleModalLoader
+
+        active: false
+
+        Component.onCompleted: PopoutService.windowRuleModalLoader = windowRuleModalLoader
+
+        WindowRuleModal {
+            id: windowRuleModal
         }
     }
 
@@ -787,6 +837,7 @@ Item {
         dankBarRepeater: dankBarRepeater
         hyprlandOverviewLoader: hyprlandOverviewLoader
         workspaceRenameModalLoader: workspaceRenameModalLoader
+        windowRuleModalLoader: windowRuleModalLoader
     }
 
     Variants {
@@ -810,6 +861,14 @@ Item {
         model: SettingsData.getFilteredScreens("osd")
 
         delegate: MediaVolumeOSD {
+            modelData: item
+        }
+    }
+
+    Variants {
+        model: SettingsData.getFilteredScreens("osd")
+
+        delegate: MediaPlaybackOSD {
             modelData: item
         }
     }

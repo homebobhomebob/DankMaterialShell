@@ -86,6 +86,7 @@ FocusScope {
 
     Controller {
         id: controller
+        active: root.parentModal?.spotlightOpen ?? true
         viewModeContext: root.viewModeContext
 
         onItemExecuted: {
@@ -271,21 +272,32 @@ FocusScope {
         anchors.fill: parent
         visible: !editMode
 
-        Rectangle {
+        Item {
             id: footerBar
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
+            anchors.leftMargin: root.parentModal?.borderWidth ?? 1
+            anchors.rightMargin: root.parentModal?.borderWidth ?? 1
+            anchors.bottomMargin: root.parentModal?.borderWidth ?? 1
             readonly property bool showFooter: SettingsData.dankLauncherV2Size !== "micro" && SettingsData.dankLauncherV2ShowFooter
-            height: showFooter ? 32 : 0
+            height: showFooter ? 36 : 0
             visible: showFooter
-            color: Theme.surfaceContainerHigh
-            radius: Theme.cornerRadius
+            clip: true
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.topMargin: -Theme.cornerRadius
+                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                radius: Theme.cornerRadius
+            }
 
             Row {
                 id: modeButtonsRow
-                x: I18n.isRtl ? parent.width - width - Theme.spacingS : Theme.spacingS
-                y: (parent.height - height) / 2
+                anchors.left: parent.left
+                anchors.leftMargin: Theme.spacingXS
+                anchors.verticalCenter: parent.verticalCenter
+                layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
                 spacing: 2
 
                 Repeater {
@@ -316,28 +328,25 @@ FocusScope {
                         required property var modelData
                         required property int index
 
-                        width: modeButtonMetrics.width + 14 + Theme.spacingXS + Theme.spacingM * 2 + Theme.spacingS
-                        height: footerBar.height - 4
-                        radius: Theme.cornerRadius - 2
+                        width: buttonContent.width + Theme.spacingM * 2
+                        height: 28
+                        radius: Theme.cornerRadius
                         color: controller.searchMode === modelData.id || modeArea.containsMouse ? Theme.primaryContainer : "transparent"
 
-                        TextMetrics {
-                            id: modeButtonMetrics
-                            font.pixelSize: Theme.fontSizeSmall
-                            text: modelData.label
-                        }
-
                         Row {
+                            id: buttonContent
                             anchors.centerIn: parent
                             spacing: Theme.spacingXS
 
                             DankIcon {
+                                anchors.verticalCenter: parent.verticalCenter
                                 name: modelData.icon
                                 size: 14
                                 color: controller.searchMode === modelData.id ? Theme.primary : Theme.surfaceVariantText
                             }
 
                             StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.label
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: controller.searchMode === modelData.id ? Theme.primary : Theme.surfaceText
@@ -357,23 +366,28 @@ FocusScope {
 
             Row {
                 id: hintsRow
-                x: I18n.isRtl ? Theme.spacingS : parent.width - width - Theme.spacingS
-                y: (parent.height - height) / 2
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.spacingS
+                anchors.verticalCenter: parent.verticalCenter
+                layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
                 spacing: Theme.spacingM
 
                 StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: "↑↓ " + I18n.tr("nav")
                     font.pixelSize: Theme.fontSizeSmall - 1
                     color: Theme.surfaceVariantText
                 }
 
                 StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: "↵ " + I18n.tr("open")
                     font.pixelSize: Theme.fontSizeSmall - 1
                     color: Theme.surfaceVariantText
                 }
 
                 StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
                     text: "Tab " + I18n.tr("actions")
                     font.pixelSize: Theme.fontSizeSmall - 1
                     color: Theme.surfaceVariantText
@@ -390,7 +404,6 @@ FocusScope {
             anchors.leftMargin: Theme.spacingM
             anchors.rightMargin: Theme.spacingM
             anchors.topMargin: Theme.spacingM
-            anchors.bottomMargin: Theme.spacingXS
             spacing: Theme.spacingXS
             clip: false
 
@@ -457,9 +470,6 @@ FocusScope {
 
                     onTextChanged: {
                         controller.setSearchQuery(text);
-                        if (text.length === 0) {
-                            controller.restorePreviousMode();
-                        }
                         if (actionPanel.expanded) {
                             actionPanel.hide();
                         }
@@ -539,8 +549,151 @@ FocusScope {
             }
 
             Item {
+                id: fileFilterRow
                 width: parent.width
-                height: parent.height - searchField.height - categoryRow.height - actionPanel.height - Theme.spacingXS * (categoryRow.visible ? 3 : 2)
+                height: showFileFilters ? fileFilterContent.height : 0
+                visible: showFileFilters
+
+                readonly property bool showFileFilters: controller.searchMode === "files"
+
+                Behavior on height {
+                    NumberAnimation {
+                        duration: Theme.shortDuration
+                        easing.type: Theme.standardEasing
+                    }
+                }
+
+                Row {
+                    id: fileFilterContent
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    Row {
+                        id: typeChips
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+                        visible: DSearchService.supportsTypeFilter
+
+                        Repeater {
+                            model: [
+                                {
+                                    id: "all",
+                                    label: I18n.tr("All"),
+                                    icon: "search"
+                                },
+                                {
+                                    id: "file",
+                                    label: I18n.tr("Files"),
+                                    icon: "insert_drive_file"
+                                },
+                                {
+                                    id: "dir",
+                                    label: I18n.tr("Folders"),
+                                    icon: "folder"
+                                }
+                            ]
+
+                            Rectangle {
+                                required property var modelData
+                                required property int index
+
+                                width: chipContent.width + Theme.spacingM * 2
+                                height: sortDropdown.height
+                                radius: Theme.cornerRadius
+                                color: controller.fileSearchType === modelData.id || chipArea.containsMouse ? Theme.primaryContainer : "transparent"
+
+                                Row {
+                                    id: chipContent
+                                    anchors.centerIn: parent
+                                    spacing: Theme.spacingXS
+
+                                    DankIcon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        name: modelData.icon
+                                        size: 14
+                                        color: controller.fileSearchType === modelData.id ? Theme.primary : Theme.surfaceVariantText
+                                    }
+
+                                    StyledText {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.label
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: controller.fileSearchType === modelData.id ? Theme.primary : Theme.surfaceText
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: chipArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: controller.setFileSearchType(modelData.id)
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 1
+                        height: 20
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.outlineMedium
+                        visible: typeChips.visible
+                    }
+
+                    DankDropdown {
+                        id: sortDropdown
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(130, parent.width / 3)
+                        compactMode: true
+                        dropdownWidth: 130
+                        popupWidth: 150
+                        maxPopupHeight: 200
+                        currentValue: {
+                            switch (controller.fileSearchSort) {
+                            case "score":
+                                return I18n.tr("Score");
+                            case "name":
+                                return I18n.tr("Name");
+                            case "modified":
+                                return I18n.tr("Modified");
+                            case "size":
+                                return I18n.tr("Size");
+                            default:
+                                return I18n.tr("Score");
+                            }
+                        }
+                        options: [I18n.tr("Score"), I18n.tr("Name"), I18n.tr("Modified"), I18n.tr("Size")]
+
+                        onValueChanged: value => {
+                            var sortMap = {};
+                            sortMap[I18n.tr("Score")] = "score";
+                            sortMap[I18n.tr("Name")] = "name";
+                            sortMap[I18n.tr("Modified")] = "modified";
+                            sortMap[I18n.tr("Size")] = "size";
+                            controller.setFileSearchSort(sortMap[value] || "score");
+                        }
+                    }
+
+                    DankTextField {
+                        id: extFilterField
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(100, parent.width / 4)
+                        height: sortDropdown.height
+                        placeholderText: I18n.tr("ext")
+                        font.pixelSize: Theme.fontSizeSmall
+                        showClearButton: text.length > 0
+
+                        onTextChanged: {
+                            controller.setFileSearchExt(text.trim());
+                        }
+                    }
+                }
+            }
+
+            Item {
+                width: parent.width
+                height: parent.height - searchField.height - categoryRow.height - fileFilterRow.height - actionPanel.height - Theme.spacingXS * ((categoryRow.visible ? 1 : 0) + (fileFilterRow.visible ? 1 : 0) + 2)
                 opacity: root.parentModal?.isClosing ? 0 : 1
 
                 ResultsList {
@@ -575,6 +728,9 @@ FocusScope {
         }
         function onSearchQueryRequested(query) {
             searchField.text = query;
+        }
+        function onModeChanged() {
+            extFilterField.text = "";
         }
     }
 

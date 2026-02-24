@@ -41,16 +41,16 @@ Rectangle {
 
     readonly property color _labelPrimary: Theme.surfaceText
     readonly property color _labelSecondary: Theme.surfaceVariantText
-    readonly property color _tileBgActive: Theme.primary
+    readonly property color _tileBgActive: Theme.ccTileActiveBg
     readonly property color _tileBgInactive: {
         const transparency = Theme.popupTransparency;
         const surface = Theme.surfaceContainer || Qt.rgba(0.1, 0.1, 0.1, 1);
         return Qt.rgba(surface.r, surface.g, surface.b, transparency);
     }
-    readonly property color _tileRingActive: Qt.rgba(Theme.primaryText.r, Theme.primaryText.g, Theme.primaryText.b, 0.22)
+    readonly property color _tileRingActive: Theme.ccTileRing
     readonly property color _tileRingInactive: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.18)
-    readonly property color _tileIconActive: Theme.primaryText
-    readonly property color _tileIconInactive: Theme.primary
+    readonly property color _tileIconActive: Theme.ccTileActiveText
+    readonly property color _tileIconInactive: Theme.ccTileInactiveIcon
 
     property int _padH: Theme.spacingS
     property int _tileSize: 48
@@ -70,6 +70,11 @@ Rectangle {
                 duration: Theme.shortDuration
             }
         }
+    }
+
+    DankRipple {
+        id: bodyRipple
+        cornerRadius: root.radius
     }
 
     Row {
@@ -112,11 +117,17 @@ Rectangle {
                 color: isActive ? _tileIconActive : _tileIconInactive
             }
 
+            DankRipple {
+                id: tileRipple
+                cornerRadius: _tileRadius
+            }
+
             MouseArea {
                 id: tileMouse
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
+                onPressed: mouse => tileRipple.trigger(mouse.x, mouse.y)
                 onClicked: root.toggled()
             }
         }
@@ -167,7 +178,11 @@ Rectangle {
                     rightHoverOverlay.opacity = 0.0;
                     rightHoverOverlay.visible = false;
                 }
-                onPressed: rightHoverOverlay.opacity = 0.16
+                onPressed: mouse => {
+                    const pos = mapToItem(root, mouse.x, mouse.y);
+                    bodyRipple.trigger(pos.x, pos.y);
+                    rightHoverOverlay.opacity = 0.16;
+                }
                 onReleased: rightHoverOverlay.opacity = containsMouse ? 0.08 : 0.0
                 onClicked: root.expandClicked()
                 onWheel: function (ev) {

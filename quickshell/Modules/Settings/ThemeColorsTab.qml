@@ -16,7 +16,7 @@ Item {
     property var cachedCursorThemes: SettingsData.availableCursorThemes
     property var cachedMatugenSchemes: Theme.availableMatugenSchemes.map(option => option.label)
     property var installedRegistryThemes: []
-    property var templateDetection: ({})
+    property var templateDetection: []
 
     property var cursorIncludeStatus: ({
             "exists": false,
@@ -106,9 +106,10 @@ Item {
     }
 
     function isTemplateDetected(templateId) {
-        if (!templateDetection || Object.keys(templateDetection).length === 0)
+        if (!templateDetection || templateDetection.length === 0)
             return true;
-        return templateDetection[templateId] !== false;
+        var item = templateDetection.find(i => i.id === templateId);
+        return !item || item.detected !== false;
     }
 
     function getTemplateDescription(templateId, baseDescription) {
@@ -145,29 +146,15 @@ Item {
             DMSService.listInstalledThemes();
         if (PopoutService.pendingThemeInstall)
             Qt.callLater(() => showThemeBrowser());
-        templateCheckProcess.running = true;
+        Proc.runCommand("template-check", ["dms", "matugen", "check"], (output, exitCode) => {
+            if (exitCode !== 0)
+                return;
+            try {
+                themeColorsTab.templateDetection = JSON.parse(output.trim());
+            } catch (e) {}
+        });
         if (CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl)
             checkCursorIncludeStatus();
-    }
-
-    Process {
-        id: templateCheckProcess
-        command: ["dms", "matugen", "check"]
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const results = JSON.parse(text);
-                    const detection = {};
-                    for (const item of results) {
-                        detection[item.id] = item.detected;
-                    }
-                    themeColorsTab.templateDetection = detection;
-                } catch (e) {
-                }
-            }
-        }
     }
 
     Connections {
@@ -282,7 +269,7 @@ Item {
                                 return 0;
                             }
 
-                            model: DMSService.dmsAvailable ? ["Generic", "Auto", "Custom", "Browse"] : ["Generic", "Auto", "Custom"]
+                            model: DMSService.dmsAvailable ? [I18n.tr("Generic", "theme category option"), I18n.tr("Auto", "theme category option"), I18n.tr("Custom", "theme category option"), I18n.tr("Browse", "theme category option")] : [I18n.tr("Generic", "theme category option"), I18n.tr("Auto", "theme category option"), I18n.tr("Custom", "theme category option")]
                             currentIndex: pendingIndex >= 0 ? pendingIndex : computedIndex
                             selectionMode: "single"
                             onSelectionChanged: (index, selected) => {
@@ -778,13 +765,26 @@ Item {
                                     return {};
                                 return activeThemeVariants.defaults[colorMode] || activeThemeVariants.defaults.dark || {};
                             }
-                            property var storedMulti: activeThemeId ? SettingsData.getRegistryThemeMultiVariant(activeThemeId, multiDefaults) : multiDefaults
-                            property string selectedFlavor: storedMulti.flavor || multiDefaults.flavor || ""
+                            property var storedMulti: activeThemeId ? SettingsData.getRegistryThemeMultiVariant(activeThemeId, multiDefaults, colorMode) : multiDefaults
+                            property string selectedFlavor: {
+                                var sf = storedMulti.flavor || multiDefaults.flavor || "";
+                                for (var i = 0; i < flavorOptions.length; i++) {
+                                    if (flavorOptions[i].id === sf)
+                                        return sf;
+                                }
+                                if (flavorOptions.length > 0)
+                                    return flavorOptions[0].id;
+                                return sf;
+                            }
                             property string selectedAccent: storedMulti.accent || multiDefaults.accent || ""
                             property var flavorOptions: {
                                 if (!isMultiVariant || !activeThemeVariants?.flavors)
                                     return [];
-                                return activeThemeVariants.flavors.filter(f => f.mode === colorMode || f.mode === "both");
+                                return activeThemeVariants.flavors.filter(f => {
+                                    if (f.mode)
+                                        return f.mode === colorMode || f.mode === "both";
+                                    return !!f[colorMode];
+                                });
                             }
                             property var flavorNames: flavorOptions.map(f => f.name)
                             property int flavorIndex: {
@@ -819,9 +819,12 @@ Item {
                                 DankButtonGroup {
                                     id: flavorButtonGroup
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    buttonPadding: parent.width < 400 ? Theme.spacingS : Theme.spacingL
-                                    minButtonWidth: parent.width < 400 ? 44 : 64
-                                    textSize: parent.width < 400 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                                    property int _count: variantSelector.flavorNames.length
+                                    property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
+                                    buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
+                                    minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
+                                    textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                                    checkEnabled: _maxPerItem >= 55
                                     property int pendingIndex: -1
                                     model: variantSelector.flavorNames
                                     currentIndex: pendingIndex >= 0 ? pendingIndex : variantSelector.flavorIndex
@@ -840,7 +843,7 @@ Item {
                                         if (!flavorId || flavorId === variantSelector.selectedFlavor)
                                             return;
                                         Theme.screenTransition();
-                                        SettingsData.setRegistryThemeMultiVariant(variantSelector.activeThemeId, flavorId, variantSelector.selectedAccent);
+                                        SettingsData.setRegistryThemeMultiVariant(variantSelector.activeThemeId, flavorId, variantSelector.selectedAccent, variantSelector.colorMode);
                                     }
                                 }
                             }
@@ -903,7 +906,7 @@ Item {
                                                     if (parent.isSelected)
                                                         return;
                                                     Theme.screenTransition();
-                                                    SettingsData.setRegistryThemeMultiVariant(variantSelector.activeThemeId, variantSelector.selectedFlavor, parent.accentId);
+                                                    SettingsData.setRegistryThemeMultiVariant(variantSelector.activeThemeId, variantSelector.selectedFlavor, parent.accentId, variantSelector.colorMode);
                                                 }
                                             }
 
@@ -927,9 +930,12 @@ Item {
                                 DankButtonGroup {
                                     id: variantButtonGroup
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    buttonPadding: parent.width < 400 ? Theme.spacingS : Theme.spacingL
-                                    minButtonWidth: parent.width < 400 ? 44 : 64
-                                    textSize: parent.width < 400 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                                    property int _count: variantSelector.variantNames.length
+                                    property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
+                                    buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
+                                    minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
+                                    textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                                    checkEnabled: _maxPerItem >= 55
                                     property int pendingIndex: -1
                                     model: variantSelector.variantNames
                                     currentIndex: pendingIndex >= 0 ? pendingIndex : variantSelector.selectedIndex
@@ -988,8 +994,7 @@ Item {
                     DankToggle {
                         id: themeModeAutoToggle
                         width: parent.width
-                        text: I18n.tr("Enable Automatic Switching")
-                        description: I18n.tr("Automatically switch between light and dark modes based on time or sunrise/sunset")
+                        text: I18n.tr("Automatic Control")
                         checked: SessionData.themeModeAutoEnabled
                         onToggled: checked => {
                             SessionData.setThemeModeAutoEnabled(checked);
@@ -1011,7 +1016,6 @@ Item {
                         DankToggle {
                             width: parent.width
                             text: I18n.tr("Share Gamma Control Settings")
-                            description: I18n.tr("Use the same time and location settings as gamma control")
                             checked: SessionData.themeModeShareGammaSettings
                             onToggled: checked => {
                                 SessionData.setThemeModeShareGammaSettings(checked);
@@ -1028,8 +1032,14 @@ Item {
                                 height: 45
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 model: [
-                                    { "text": "Time", "icon": "access_time" },
-                                    { "text": "Location", "icon": "place" }
+                                    {
+                                        "text": I18n.tr("Time", "theme auto mode tab"),
+                                        "icon": "access_time"
+                                    },
+                                    {
+                                        "text": I18n.tr("Location", "theme auto mode tab"),
+                                        "icon": "place"
+                                    }
                                 ]
 
                                 Component.onCompleted: {
@@ -1066,7 +1076,7 @@ Item {
 
                                     StyledText {
                                         text: ""
-                                        width: 80
+                                        width: 50
                                         height: 20
                                     }
 
@@ -1091,10 +1101,10 @@ Item {
                                     spacing: Theme.spacingM
 
                                     StyledText {
-                                        text: I18n.tr("Dark Start")
+                                        text: I18n.tr("Start")
                                         font.pixelSize: Theme.fontSizeMedium
                                         color: Theme.surfaceText
-                                        width: 80
+                                        width: 50
                                         height: 40
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -1104,7 +1114,8 @@ Item {
                                         currentValue: SessionData.themeModeStartHour.toString()
                                         options: {
                                             var hours = [];
-                                            for (var i = 0; i < 24; i++) hours.push(i.toString());
+                                            for (var i = 0; i < 24; i++)
+                                                hours.push(i.toString());
                                             return hours;
                                         }
                                         onValueChanged: value => {
@@ -1132,10 +1143,10 @@ Item {
                                     spacing: Theme.spacingM
 
                                     StyledText {
-                                        text: I18n.tr("Light Start")
+                                        text: I18n.tr("End")
                                         font.pixelSize: Theme.fontSizeMedium
                                         color: Theme.surfaceText
-                                        width: 80
+                                        width: 50
                                         height: 40
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -1145,7 +1156,8 @@ Item {
                                         currentValue: SessionData.themeModeEndHour.toString()
                                         options: {
                                             var hours = [];
-                                            for (var i = 0; i < 24; i++) hours.push(i.toString());
+                                            for (var i = 0; i < 24; i++)
+                                                hours.push(i.toString());
                                             return hours;
                                         }
                                         onValueChanged: value => {
@@ -1169,15 +1181,6 @@ Item {
                                     }
                                 }
                             }
-
-                            StyledText {
-                                text: SessionData.isLightMode ? I18n.tr("Light mode will be active from Light Start to Dark Start") : I18n.tr("Dark mode will be active from Dark Start to Light Start")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                width: parent.width
-                                wrapMode: Text.WordWrap
-                                horizontalAlignment: Text.AlignHCenter
-                            }
                         }
 
                         Column {
@@ -1189,7 +1192,6 @@ Item {
                                 id: themeModeIpLocationToggle
                                 width: parent.width
                                 text: I18n.tr("Use IP Location")
-                                description: I18n.tr("Automatically detect location based on IP address")
                                 checked: SessionData.nightModeUseIPLocation || false
                                 onToggled: checked => {
                                     SessionData.setNightModeUseIPLocation(checked);
@@ -1268,23 +1270,13 @@ Item {
                                 }
 
                                 StyledText {
-                                    text: I18n.tr("Uses sunrise/sunset times to automatically adjust theme mode based on your location.")
+                                    text: I18n.tr("Uses sunrise/sunset times based on your location.")
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                     width: parent.width
                                     wrapMode: Text.WordWrap
                                     horizontalAlignment: Text.AlignHCenter
                                 }
-                            }
-
-                            StyledText {
-                                text: SessionData.isLightMode ? I18n.tr("Light mode will be active from sunrise to sunset") : I18n.tr("Dark mode will be active from sunset to sunrise")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.primary
-                                width: parent.width
-                                wrapMode: Text.WordWrap
-                                horizontalAlignment: Text.AlignHCenter
-                                visible: SessionData.nightModeUseIPLocation || (SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0)
                             }
                         }
 
@@ -1356,7 +1348,7 @@ Item {
 
                                         DankIcon {
                                             name: SessionData.isLightMode ? "light_mode" : "dark_mode"
-                                            size: Theme.iconSizeMedium
+                                            size: Theme.iconSize
                                             color: SessionData.isLightMode ? "#FFA726" : "#7E57C2"
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
@@ -1392,7 +1384,7 @@ Item {
 
                                         DankIcon {
                                             name: "schedule"
-                                            size: Theme.iconSizeMedium
+                                            size: Theme.iconSize
                                             color: Theme.primary
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
@@ -1455,7 +1447,7 @@ Item {
                     settingKey: "widgetColorMode"
                     text: I18n.tr("Widget Style")
                     description: I18n.tr("Change bar appearance")
-                    model: ["default", "colorful"]
+                    model: [I18n.tr("Default", "widget style option"), I18n.tr("Colorful", "widget style option")]
                     currentIndex: SettingsData.widgetColorMode === "colorful" ? 1 : 0
                     onSelectionChanged: (index, selected) => {
                         if (!selected)
@@ -1496,6 +1488,70 @@ Item {
                             return;
                         const colorOptions = ["sth", "s", "sc", "sch"];
                         SettingsData.set("widgetBackgroundColor", colorOptions[index]);
+                    }
+                }
+
+                SettingsDropdownRow {
+                    tab: "theme"
+                    tags: ["control", "center", "tile", "button", "color", "active"]
+                    settingKey: "controlCenterTileColorMode"
+                    text: I18n.tr("Control Center Tile Color")
+                    description: I18n.tr("Active tile background and icon color", "control center tile color setting description")
+                    options: [I18n.tr("Primary", "tile color option"), I18n.tr("Primary Container", "tile color option"), I18n.tr("Secondary", "tile color option"), I18n.tr("Surface Variant", "tile color option")]
+                    currentValue: {
+                        switch (SettingsData.controlCenterTileColorMode) {
+                        case "primaryContainer":
+                            return I18n.tr("Primary Container", "tile color option");
+                        case "secondary":
+                            return I18n.tr("Secondary", "tile color option");
+                        case "surfaceVariant":
+                            return I18n.tr("Surface Variant", "tile color option");
+                        default:
+                            return I18n.tr("Primary", "tile color option");
+                        }
+                    }
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Primary Container", "tile color option")) {
+                            SettingsData.set("controlCenterTileColorMode", "primaryContainer");
+                        } else if (value === I18n.tr("Secondary", "tile color option")) {
+                            SettingsData.set("controlCenterTileColorMode", "secondary");
+                        } else if (value === I18n.tr("Surface Variant", "tile color option")) {
+                            SettingsData.set("controlCenterTileColorMode", "surfaceVariant");
+                        } else {
+                            SettingsData.set("controlCenterTileColorMode", "primary");
+                        }
+                    }
+                }
+
+                SettingsDropdownRow {
+                    tab: "theme"
+                    tags: ["button", "color", "primary", "accent"]
+                    settingKey: "buttonColorMode"
+                    text: I18n.tr("Button Color")
+                    description: I18n.tr("Color for primary action buttons")
+                    options: [I18n.tr("Primary", "button color option"), I18n.tr("Primary Container", "button color option"), I18n.tr("Secondary", "button color option"), I18n.tr("Surface Variant", "button color option")]
+                    currentValue: {
+                        switch (SettingsData.buttonColorMode) {
+                        case "primaryContainer":
+                            return I18n.tr("Primary Container", "button color option");
+                        case "secondary":
+                            return I18n.tr("Secondary", "button color option");
+                        case "surfaceVariant":
+                            return I18n.tr("Surface Variant", "button color option");
+                        default:
+                            return I18n.tr("Primary", "button color option");
+                        }
+                    }
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Primary Container", "button color option")) {
+                            SettingsData.set("buttonColorMode", "primaryContainer");
+                        } else if (value === I18n.tr("Secondary", "button color option")) {
+                            SettingsData.set("buttonColorMode", "secondary");
+                        } else if (value === I18n.tr("Surface Variant", "button color option")) {
+                            SettingsData.set("buttonColorMode", "surfaceVariant");
+                        } else {
+                            SettingsData.set("buttonColorMode", "primary");
+                        }
                     }
                 }
 
@@ -2272,7 +2328,7 @@ Item {
                     tags: ["matugen", "neovim", "terminal", "template"]
                     settingKey: "matugenTemplateNeovim"
                     text: "neovim"
-                    description: getTemplateDescription("nvim", "Requires lazy plugin manager")
+                    description: getTemplateDescription("nvim", I18n.tr("Requires lazy plugin manager", "neovim template description"))
                     descriptionColor: getTemplateDescriptionColor("nvim")
                     visible: SettingsData.runDmsMatugenTemplates
                     checked: SettingsData.matugenTemplateNeovim
@@ -2401,7 +2457,7 @@ Item {
                     onValueChanged: value => {
                         SettingsData.setIconTheme(value);
                         if (Quickshell.env("QT_QPA_PLATFORMTHEME") != "gtk3" && Quickshell.env("QT_QPA_PLATFORMTHEME") != "qt6ct" && Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") != "qt6ct") {
-                            ToastService.showError("Missing Environment Variables", "You need to set either:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct\nas environment variables, and then restart the shell.\n\nqt6ct requires qt6ct-kde to be installed.");
+                            ToastService.showError(I18n.tr("Missing Environment Variables", "qt theme env error title"), I18n.tr("You need to set either:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct\nas environment variables, and then restart the shell.\n\nqt6ct requires qt6ct-kde to be installed.", "qt theme env error body"));
                         }
                     }
                 }

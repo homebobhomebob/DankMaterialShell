@@ -1,11 +1,21 @@
 import QtQuick
 import qs.Common
+import qs.Modals.FileBrowser
 import qs.Services
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    FileBrowserModal {
+        id: dockLogoFileBrowser
+        browserTitle: I18n.tr("Select Dock Launcher Logo")
+        browserIcon: "image"
+        browserType: "generic"
+        filterExtensions: ["*.svg", "*.png", "*.jpg", "*.jpeg", "*.webp"]
+        onFileSelected: path => SettingsData.set("dockLauncherLogoCustomPath", path.replace("file://", ""))
+    }
 
     DankFlickable {
         anchors.fill: parent
@@ -19,53 +29,6 @@ Item {
             width: Math.min(550, parent.width - Theme.spacingL * 2)
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Theme.spacingXL
-
-            SettingsCard {
-                width: parent.width
-                iconName: "swap_vert"
-                title: I18n.tr("Dock Position")
-                settingKey: "dockPosition"
-
-                SettingsButtonGroupRow {
-                    text: I18n.tr("Position")
-                    model: ["Top", "Bottom", "Left", "Right"]
-                    buttonPadding: Theme.spacingS
-                    minButtonWidth: 44
-                    textSize: Theme.fontSizeSmall
-                    currentIndex: {
-                        switch (SettingsData.dockPosition) {
-                        case SettingsData.Position.Top:
-                            return 0;
-                        case SettingsData.Position.Bottom:
-                            return 1;
-                        case SettingsData.Position.Left:
-                            return 2;
-                        case SettingsData.Position.Right:
-                            return 3;
-                        default:
-                            return 1;
-                        }
-                    }
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected)
-                            return;
-                        switch (index) {
-                        case 0:
-                            SettingsData.setDockPosition(SettingsData.Position.Top);
-                            break;
-                        case 1:
-                            SettingsData.setDockPosition(SettingsData.Position.Bottom);
-                            break;
-                        case 2:
-                            SettingsData.setDockPosition(SettingsData.Position.Left);
-                            break;
-                        case 3:
-                            SettingsData.setDockPosition(SettingsData.Position.Right);
-                            break;
-                        }
-                    }
-                }
-            }
 
             SettingsCard {
                 width: parent.width
@@ -125,6 +88,56 @@ Item {
 
             SettingsCard {
                 width: parent.width
+                iconName: "swap_vert"
+                title: I18n.tr("Position")
+                settingKey: "dockPosition"
+
+                Item {
+                    width: parent.width
+                    height: dockPositionButtonGroup.height
+
+                    DankButtonGroup {
+                        id: dockPositionButtonGroup
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        model: [I18n.tr("Top"), I18n.tr("Bottom"), I18n.tr("Left"), I18n.tr("Right")]
+                        currentIndex: {
+                            switch (SettingsData.dockPosition) {
+                            case SettingsData.Position.Top:
+                                return 0;
+                            case SettingsData.Position.Bottom:
+                                return 1;
+                            case SettingsData.Position.Left:
+                                return 2;
+                            case SettingsData.Position.Right:
+                                return 3;
+                            default:
+                                return 1;
+                            }
+                        }
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            switch (index) {
+                            case 0:
+                                SettingsData.setDockPosition(SettingsData.Position.Top);
+                                break;
+                            case 1:
+                                SettingsData.setDockPosition(SettingsData.Position.Bottom);
+                                break;
+                            case 2:
+                                SettingsData.setDockPosition(SettingsData.Position.Left);
+                                break;
+                            case 3:
+                                SettingsData.setDockPosition(SettingsData.Position.Right);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                width: parent.width
                 iconName: "apps"
                 title: I18n.tr("Behavior")
                 settingKey: "dockBehavior"
@@ -151,7 +164,7 @@ Item {
                     settingKey: "dockIndicatorStyle"
                     tags: ["dock", "indicator", "style", "circle", "line"]
                     text: I18n.tr("Indicator Style")
-                    model: ["Circle", "Line"]
+                    model: [I18n.tr("Circle", "dock indicator style option"), I18n.tr("Line", "dock indicator style option")]
                     buttonPadding: Theme.spacingS
                     minButtonWidth: 44
                     textSize: Theme.fontSizeSmall
@@ -161,6 +174,39 @@ Item {
                             SettingsData.set("dockIndicatorStyle", index === 0 ? "circle" : "line");
                         }
                     }
+                }
+
+                SettingsSliderRow {
+                    settingKey: "dockMaxVisibleApps"
+                    tags: ["dock", "overflow", "max", "apps", "limit"]
+                    text: I18n.tr("Max Pinned Apps (0 = Unlimited)")
+                    minimum: 0
+                    maximum: 30
+                    value: SettingsData.dockMaxVisibleApps
+                    defaultValue: 0
+                    unit: ""
+                    onSliderValueChanged: newValue => SettingsData.set("dockMaxVisibleApps", newValue)
+                }
+
+                SettingsSliderRow {
+                    settingKey: "dockMaxVisibleRunningApps"
+                    tags: ["dock", "overflow", "max", "running", "apps", "limit"]
+                    text: I18n.tr("Max Running Apps (0 = Unlimited)")
+                    minimum: 0
+                    maximum: 30
+                    value: SettingsData.dockMaxVisibleRunningApps
+                    defaultValue: 0
+                    unit: ""
+                    onSliderValueChanged: newValue => SettingsData.set("dockMaxVisibleRunningApps", newValue)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dockShowOverflowBadge"
+                    tags: ["dock", "overflow", "badge", "count", "indicator"]
+                    text: I18n.tr("Show Overflow Badge Count")
+                    description: I18n.tr("Displays count when overflow is active")
+                    checked: SettingsData.dockShowOverflowBadge
+                    onToggled: checked => SettingsData.set("dockShowOverflowBadge", checked)
                 }
             }
 
@@ -174,7 +220,6 @@ Item {
                     settingKey: "dockLauncherEnabled"
                     tags: ["dock", "launcher", "button", "apps"]
                     text: I18n.tr("Show Launcher Button")
-                    description: I18n.tr("Add a draggable launcher button to the dock")
                     checked: SettingsData.dockLauncherEnabled
                     onToggled: checked => SettingsData.set("dockLauncherEnabled", checked)
                 }
@@ -184,20 +229,12 @@ Item {
                     spacing: Theme.spacingL
                     visible: SettingsData.dockLauncherEnabled
 
-                    StyledText {
-                        width: parent.width
-                        text: I18n.tr("Long press and drag the launcher button to reposition it in the dock")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        wrapMode: Text.WordWrap
-                    }
-
                     Column {
                         width: parent.width
                         spacing: Theme.spacingM
 
                         StyledText {
-                            text: I18n.tr("Launcher Icon")
+                            text: I18n.tr("Icon")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceText
                             font.weight: Font.Medium
@@ -227,6 +264,8 @@ Item {
                                         modes.push("Sway");
                                     } else if (CompositorService.isScroll) {
                                         modes.push("Scroll");
+                                    } else if (CompositorService.isMiracle) {
+                                        modes.push("Miracle");
                                     } else {
                                         modes.push(I18n.tr("Compositor"));
                                     }
@@ -268,6 +307,40 @@ Item {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    Row {
+                        width: parent.width
+                        visible: SettingsData.dockLauncherLogoMode === "custom"
+                        spacing: Theme.spacingM
+
+                        StyledRect {
+                            width: parent.width - selectButton.width - Theme.spacingM
+                            height: 36
+                            radius: Theme.cornerRadius
+                            color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.9)
+                            border.color: Theme.outlineStrong
+                            border.width: 1
+
+                            StyledText {
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: SettingsData.dockLauncherLogoCustomPath || I18n.tr("Select an image file...")
+                                font.pixelSize: Theme.fontSizeMedium
+                                color: SettingsData.dockLauncherLogoCustomPath ? Theme.surfaceText : Theme.outlineButton
+                                width: parent.width - Theme.spacingM * 2
+                                elide: Text.ElideMiddle
+                            }
+                        }
+
+                        DankActionButton {
+                            id: selectButton
+                            iconName: "folder_open"
+                            width: 36
+                            height: 36
+                            onClicked: dockLogoFileBrowser.open()
                         }
                     }
 
@@ -436,6 +509,7 @@ Item {
                     value: SettingsData.dockIconSize
                     minimum: 24
                     maximum: 96
+                    unit: "px"
                     defaultValue: 48
                     onSliderValueChanged: newValue => SettingsData.set("dockIconSize", newValue)
                 }
@@ -446,6 +520,8 @@ Item {
                 iconName: "space_bar"
                 title: I18n.tr("Spacing")
                 settingKey: "dockSpacing"
+                collapsible: true
+                expanded: false
 
                 SettingsSliderRow {
                     text: I18n.tr("Padding")
@@ -497,6 +573,8 @@ Item {
                 iconName: "border_style"
                 title: I18n.tr("Border")
                 settingKey: "dockBorder"
+                collapsible: true
+                expanded: false
 
                 SettingsToggleRow {
                     text: I18n.tr("Border")
@@ -509,7 +587,7 @@ Item {
                     text: I18n.tr("Border Color")
                     description: I18n.tr("Choose the border accent color")
                     visible: SettingsData.dockBorderEnabled
-                    model: ["Surface", "Secondary", "Primary"]
+                    model: [I18n.tr("Surface", "color option"), I18n.tr("Secondary", "color option"), I18n.tr("Primary", "color option")]
                     buttonPadding: Theme.spacingS
                     minButtonWidth: 44
                     textSize: Theme.fontSizeSmall

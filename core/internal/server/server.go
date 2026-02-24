@@ -1516,7 +1516,11 @@ func Start(printDocs bool) error {
 		}
 	}()
 
+	loginctlReady := make(chan struct{})
+	freedesktopReady := make(chan struct{})
+
 	go func() {
+		defer close(loginctlReady)
 		if err := InitializeLoginctlManager(); err != nil {
 			log.Warnf("Loginctl manager unavailable: %v", err)
 		} else {
@@ -1525,11 +1529,37 @@ func Start(printDocs bool) error {
 	}()
 
 	go func() {
+		defer close(freedesktopReady)
 		if err := InitializeFreedeskManager(); err != nil {
 			log.Warnf("Freedesktop manager unavailable: %v", err)
 		} else if freedesktopManager != nil {
 			freedesktopManager.NotifySubscribers()
 			notifyCapabilityChange()
+		}
+	}()
+
+	// Bridge loginctl lock state to the freedesktop/gnome screensaver
+	// ActiveChanged signal so apps like Bitwarden can detect screen lock.
+	go func() {
+		<-loginctlReady
+		<-freedesktopReady
+
+		if loginctlManager == nil || freedesktopManager == nil {
+			return
+		}
+
+		ch := loginctlManager.Subscribe("dms-lock-bridge")
+		defer loginctlManager.Unsubscribe("dms-lock-bridge")
+
+		initial := loginctlManager.GetState()
+		lastLocked := initial.Locked
+		freedesktopManager.SetScreenLockActive(lastLocked)
+
+		for state := range ch {
+			if state.Locked != lastLocked {
+				lastLocked = state.Locked
+				freedesktopManager.SetScreenLockActive(lastLocked)
+			}
 		}
 	}()
 
@@ -1569,6 +1599,13 @@ func Start(printDocs bool) error {
 		log.Warnf("Theme mode manager unavailable: %v", err)
 	} else {
 		notifyCapabilityChange()
+		go func() {
+			<-loginctlReady
+			if loginctlManager == nil {
+				return
+			}
+			themeModeManager.WatchLoginctl(loginctlManager)
+		}()
 	}
 
 	fatalErrChan := make(chan error, 1)

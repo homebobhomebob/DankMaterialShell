@@ -14,12 +14,22 @@ Singleton {
     readonly property string outputsPath: hyprDmsDir + "/outputs.conf"
     readonly property string layoutPath: hyprDmsDir + "/layout.conf"
     readonly property string cursorPath: hyprDmsDir + "/cursor.conf"
+    readonly property string windowrulesPath: hyprDmsDir + "/windowrules.conf"
 
     property int _lastGapValue: -1
 
     Component.onCompleted: {
-        if (CompositorService.isHyprland)
+        if (CompositorService.isHyprland) {
             Qt.callLater(generateLayoutConfig);
+            ensureWindowrulesConfig();
+        }
+    }
+
+    function ensureWindowrulesConfig() {
+        Proc.runCommand("hypr-ensure-windowrules", ["sh", "-c", `mkdir -p "${hyprDmsDir}" && [ ! -f "${windowrulesPath}" ] && touch "${windowrulesPath}" || true`], (output, exitCode) => {
+            if (exitCode !== 0)
+                console.warn("HyprlandService: Failed to ensure windowrules.conf:", output);
+        });
     }
 
     Connections {
@@ -45,7 +55,7 @@ Singleton {
 
     function getOutputIdentifier(output, outputName) {
         if (SettingsData.displayNameMode === "model" && output.make && output.model)
-            return "desc:" + output.make + " " + output.model;
+            return "desc:" + output.make + " " + output.model + " " + (output.serial || "Unknown");
         return outputName;
     }
 
@@ -88,8 +98,10 @@ Singleton {
             if (transform !== 0)
                 monitorLine += ", transform, " + transform;
 
-            if (output.vrr_supported && output.vrr_enabled)
-                monitorLine += ", vrr, 1";
+            if (output.vrr_supported) {
+                const vrrMode = outputSettings.vrrFullscreenOnly ? 2 : (output.vrr_enabled ? 1 : 0);
+                monitorLine += ", vrr, " + vrrMode;
+            }
 
             if (output.mirror && output.mirror.length > 0)
                 monitorLine += ", mirror, " + output.mirror;

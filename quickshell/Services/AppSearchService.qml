@@ -111,7 +111,17 @@ Singleton {
 
     function getVisibleApplications() {
         if (_cachedVisibleApps === null) {
-            _cachedVisibleApps = applications.filter(app => !isAppHidden(app));
+            const seen = new Set();
+            _cachedVisibleApps = applications.filter(app => {
+                if (isAppHidden(app))
+                    return false;
+                const id = app.id;
+                if (id && seen.has(id))
+                    return false;
+                if (id)
+                    seen.add(id);
+                return true;
+            });
         }
         return _cachedVisibleApps.map(app => applyAppOverride(app));
     }
@@ -322,7 +332,7 @@ Singleton {
             PopoutService.toggleNotepad();
             return true;
         case "processlist":
-            PopoutService.toggleProcessList();
+            PopoutService.toggleProcessListModal();
             return true;
         }
         return false;
@@ -484,7 +494,7 @@ Singleton {
                 textScore = 5000;
                 matchType = "prefix";
             } else if (wordBoundaryMatch(name, queryLower)) {
-                textScore = 1000;
+                textScore = 3000;
                 matchType = "word_boundary";
             } else if (name.includes(queryLower)) {
                 textScore = 500;
@@ -541,7 +551,7 @@ Singleton {
         }
 
         for (const result of results) {
-            const frecencyBonus = result.frecency > 0 ? Math.min(result.frecency / 10, 2000) : 0;
+            const frecencyBonus = result.frecency > 0 ? Math.min(result.frecency, 2000) : 0;
             const recencyBonus = result.daysSinceUsed < 1 ? 1500 : result.daysSinceUsed < 7 ? 1000 : result.daysSinceUsed < 30 ? 500 : 0;
 
             const finalScore = result.textScore + frecencyBonus + recencyBonus;
@@ -865,6 +875,26 @@ Singleton {
 
         if (typeof instance.getPasteText === "function") {
             return instance.getPasteText(item);
+        }
+
+        return null;
+    }
+
+    function getPluginPasteArgs(pluginId, item) {
+        if (typeof PluginService === "undefined")
+            return null;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return null;
+
+        if (typeof instance.getPasteArgs === "function")
+            return instance.getPasteArgs(item);
+
+        if (typeof instance.getPasteText === "function") {
+            const text = instance.getPasteText(item);
+            if (text)
+                return ["dms", "cl", "copy", text];
         }
 
         return null;

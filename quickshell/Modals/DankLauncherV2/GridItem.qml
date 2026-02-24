@@ -36,7 +36,13 @@ Rectangle {
     readonly property int computedIconSize: Math.min(48, Math.max(32, width * 0.45))
 
     radius: Theme.cornerRadius
-    color: isSelected ? Theme.primaryPressed : isHovered ? Theme.primaryPressed : "transparent"
+    color: isSelected ? Theme.primaryPressed : isHovered ? Theme.primaryHoverLight : "transparent"
+
+    DankRipple {
+        id: rippleLayer
+        rippleColor: Theme.surfaceText
+        cornerRadius: root.radius
+    }
 
     Column {
         anchors.centerIn: parent
@@ -55,11 +61,13 @@ Rectangle {
             materialIconSizeAdjustment: root.computedIconSize * 0.3
         }
 
-        StyledText {
+        Text {
             width: parent.width
-            text: root.item?.name ?? ""
+            text: root.item?._hName ?? root.item?.name ?? ""
+            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
             font.pixelSize: Theme.fontSizeSmall
             font.weight: Font.Medium
+            font.family: Theme.fontFamily
             color: root.isSelected ? Theme.primary : Theme.surfaceText
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
@@ -75,6 +83,10 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
+        onPressed: mouse => {
+            if (mouse.button === Qt.LeftButton)
+                rippleLayer.trigger(mouse.x, mouse.y);
+        }
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton) {
                 var scenePos = mapToItem(null, mouse.x, mouse.y);

@@ -47,22 +47,63 @@ Item {
                 }
 
                 SettingsDropdownRow {
-                    property var scrollOpts: {
-                        "Change Volume": "volume",
-                        "Change Song": "song",
-                        "Nothing": "nothing"
-                    }
+                    property var scrollOptsInternal: ["volume", "song", "nothing"]
+                    property var scrollOptsDisplay: [I18n.tr("Change Volume", "media scroll wheel option"), I18n.tr("Change Song", "media scroll wheel option"), I18n.tr("Nothing", "media scroll wheel option")]
 
                     text: I18n.tr("Scroll Wheel")
                     description: I18n.tr("Scroll wheel behavior on media widget")
                     settingKey: "audioScrollMode"
                     tags: ["media", "music", "scroll"]
-                    options: Object.keys(scrollOpts).sort()
+                    options: scrollOptsDisplay
                     currentValue: {
-                        Object.keys(scrollOpts).find(key => scrollOpts[key] === SettingsData.audioScrollMode) ?? "volume"
+                        const idx = scrollOptsInternal.indexOf(SettingsData.audioScrollMode);
+                        return idx >= 0 ? scrollOptsDisplay[idx] : scrollOptsDisplay[0];
                     }
                     onValueChanged: value => {
-                        SettingsData.set("audioScrollMode", scrollOpts[value])
+                        const idx = scrollOptsDisplay.indexOf(value);
+                        if (idx >= 0)
+                            SettingsData.set("audioScrollMode", scrollOptsInternal[idx]);
+                    }
+                }
+
+                Item {
+                    width: parent.width
+                    height: audioWheelScrollAmountColumn.height
+                    visible: SettingsData.audioScrollMode == "volume"
+                    opacity: visible ? 1 : 0
+
+                    Column {
+                        id: audioWheelScrollAmountColumn
+                        x: Theme.spacingL
+                        width: 120
+                        spacing: Theme.spacingS
+
+                        StyledText {
+                            text: I18n.tr("Adjust volume per scroll indent")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            font.weight: Font.Medium
+                            horizontalAlignment: Text.AlignLeft
+                        }
+
+                        DankTextField {
+                            width: 100
+                            height: 28
+                            placeholderText: "5"
+                            text: SettingsData.audioWheelScrollAmount
+                            maximumLength: 2
+                            font.pixelSize: Theme.fontSizeSmall
+                            topPadding: Theme.spacingXS
+                            bottomPadding: Theme.spacingXS
+                            onEditingFinished: SettingsData.set("audioWheelScrollAmount", parseInt(text, 10))
+                        }
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Theme.mediumDuration
+                            easing.type: Theme.emphasizedEasing
+                        }
                     }
                 }
             }

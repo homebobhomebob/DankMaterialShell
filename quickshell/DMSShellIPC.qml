@@ -1,8 +1,11 @@
 import QtQuick
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Wayland
+import Quickshell.Services.SystemTray
 import qs.Common
 import qs.Services
+import qs.Modules.Settings.DisplayConfig
 
 Item {
     id: root
@@ -16,6 +19,7 @@ Item {
     required property var dankBarRepeater
     required property var hyprlandOverviewLoader
     required property var workspaceRenameModalLoader
+    required property var windowRuleModalLoader
 
     function getFirstBar() {
         if (!root.dankBarRepeater || root.dankBarRepeater.count === 0)
@@ -193,7 +197,7 @@ Item {
             if (CompositorService.isNiri && NiriService.currentOutput) {
                 return NiriService.currentOutput;
             }
-            if ((CompositorService.isSway || CompositorService.isScroll) && I3.workspaces?.values) {
+            if ((CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) && I3.workspaces?.values) {
                 const focusedWs = I3.workspaces.values.find(ws => ws.focused === true);
                 return focusedWs?.monitor?.name || "";
             }
@@ -332,6 +336,36 @@ Item {
         function stop(): void {
             if (MprisController.activePlayer) {
                 MprisController.activePlayer.stop();
+            }
+        }
+
+        function increment(step: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const currentVolume = Math.round(MprisController.activePlayer.volume * 100);
+                const stepValue = parseInt(step || "5");
+                const newVolume = Math.max(0, Math.min(100, currentVolume + stepValue));
+
+                MprisController.activePlayer.volume = newVolume / 100;
+                return `Player volume increased to ${newVolume}%`;
+            }
+        }
+
+        function decrement(step: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const currentVolume = Math.round(MprisController.activePlayer.volume * 100);
+                const stepValue = parseInt(step || "5");
+                const newVolume = Math.max(0, Math.min(100, currentVolume - stepValue));
+
+                MprisController.activePlayer.volume = newVolume / 100;
+                return `Player volume decreased to ${newVolume}%`;
+            }
+        }
+
+        function setvolume(percentage: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const clampedVolume = Math.max(0, Math.min(100, percentage));
+                MprisController.activePlayer.volume = clampedVolume / 100;
+                return `Player volume set to ${clampedVolume}%`;
             }
         }
 
@@ -825,6 +859,70 @@ Item {
             return success ? `WIDGET_TOGGLE_SUCCESS: ${widgetId}` : `WIDGET_TOGGLE_FAILED: ${widgetId}`;
         }
 
+        function openWith(widgetId: string, mode: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+            if (typeof widget.openWithMode !== "function")
+                return `WIDGET_OPEN_WITH_NOT_SUPPORTED: ${widgetId}`;
+
+            widget.openWithMode(mode || "all");
+            return `WIDGET_OPEN_WITH_SUCCESS: ${widgetId} ${mode}`;
+        }
+
+        function toggleWith(widgetId: string, mode: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+            if (typeof widget.toggleWithMode !== "function")
+                return `WIDGET_TOGGLE_WITH_NOT_SUPPORTED: ${widgetId}`;
+
+            widget.toggleWithMode(mode || "all");
+            return `WIDGET_TOGGLE_WITH_SUCCESS: ${widgetId} ${mode}`;
+        }
+
+        function openQuery(widgetId: string, query: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+            if (typeof widget.openWithQuery !== "function")
+                return `WIDGET_OPEN_QUERY_NOT_SUPPORTED: ${widgetId}`;
+
+            widget.openWithQuery(query || "");
+            return `WIDGET_OPEN_QUERY_SUCCESS: ${widgetId}`;
+        }
+
+        function toggleQuery(widgetId: string, query: string): string {
+            if (!widgetId)
+                return "ERROR: No widget ID specified";
+            if (!BarWidgetService.hasWidget(widgetId))
+                return `WIDGET_NOT_FOUND: ${widgetId}`;
+
+            const widget = BarWidgetService.getWidgetOnFocusedScreen(widgetId);
+            if (!widget)
+                return `WIDGET_NOT_AVAILABLE: ${widgetId}`;
+            if (typeof widget.toggleWithQuery !== "function")
+                return `WIDGET_TOGGLE_QUERY_NOT_SUPPORTED: ${widgetId}`;
+
+            widget.toggleWithQuery(query || "");
+            return `WIDGET_TOGGLE_QUERY_SUCCESS: ${widgetId}`;
+        }
+
         function list(): string {
             const widgets = BarWidgetService.getRegisteredWidgetIds();
             if (widgets.length === 0)
@@ -938,8 +1036,10 @@ Item {
             if (!PluginService.availablePlugins[pluginId])
                 return `PLUGIN_NOT_FOUND: ${pluginId}`;
 
-            if (!PluginService.isPluginLoaded(pluginId))
-                return `PLUGIN_NOT_LOADED: ${pluginId}`;
+            if (!PluginService.isPluginLoaded(pluginId)) {
+                const success = PluginService.enablePlugin(pluginId);
+                return success ? `PLUGIN_RELOAD_SUCCESS: ${pluginId}` : `PLUGIN_RELOAD_FAILED: ${pluginId}`;
+            }
 
             const success = PluginService.reloadPlugin(pluginId);
             return success ? `PLUGIN_RELOAD_SUCCESS: ${pluginId}` : `PLUGIN_RELOAD_FAILED: ${pluginId}`;
@@ -1401,5 +1501,182 @@ Item {
         }
 
         target: "workspace-rename"
+    }
+
+    IpcHandler {
+        function getFocusedWindow() {
+            const active = ToplevelManager.activeToplevel;
+            if (!active)
+                return null;
+            return {
+                appId: active.appId || "",
+                title: active.title || ""
+            };
+        }
+
+        function open(): string {
+            if (!CompositorService.isNiri)
+                return "WINDOW_RULES_NIRI_ONLY";
+            root.windowRuleModalLoader.active = true;
+            if (root.windowRuleModalLoader.item) {
+                root.windowRuleModalLoader.item.show(getFocusedWindow());
+                return "WINDOW_RULE_MODAL_OPENED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        function close(): string {
+            if (root.windowRuleModalLoader.item) {
+                root.windowRuleModalLoader.item.hide();
+                return "WINDOW_RULE_MODAL_CLOSED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        function toggle(): string {
+            if (!CompositorService.isNiri)
+                return "WINDOW_RULES_NIRI_ONLY";
+            root.windowRuleModalLoader.active = true;
+            if (root.windowRuleModalLoader.item) {
+                if (root.windowRuleModalLoader.item.visible) {
+                    root.windowRuleModalLoader.item.hide();
+                    return "WINDOW_RULE_MODAL_CLOSED";
+                }
+                root.windowRuleModalLoader.item.show(getFocusedWindow());
+                return "WINDOW_RULE_MODAL_OPENED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        target: "window-rules"
+    }
+
+    IpcHandler {
+        function listProfiles(): string {
+            const profiles = DisplayConfigState.validatedProfiles;
+            const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
+            const matchedId = DisplayConfigState.matchedProfile;
+            const lines = [];
+
+            for (const id in profiles) {
+                const p = profiles[id];
+                const flags = [];
+                if (id === activeId)
+                    flags.push("active");
+                if (id === matchedId)
+                    flags.push("matched");
+                const flagStr = flags.length > 0 ? " [" + flags.join(",") + "]" : "";
+                lines.push(p.name + flagStr + " -> " + JSON.stringify(p.outputSet));
+            }
+
+            if (lines.length === 0)
+                return "No profiles configured";
+            return lines.join("\n");
+        }
+
+        function setProfile(profileName: string): string {
+            if (!profileName)
+                return "ERROR: No profile name specified";
+
+            if (SettingsData.displayProfileAutoSelect)
+                return "ERROR: Auto profile selection is enabled. Use toggleAuto first";
+
+            const profiles = DisplayConfigState.validatedProfiles;
+            let profileId = null;
+
+            for (const id in profiles) {
+                if (profiles[id].name === profileName) {
+                    profileId = id;
+                    break;
+                }
+            }
+
+            if (!profileId)
+                return `ERROR: Profile not found: ${profileName}`;
+
+            DisplayConfigState.activateProfile(profileId);
+            return `PROFILE_SET_SUCCESS: ${profileName}`;
+        }
+
+        // ! TODO - auto profile switching is buggy on niri and other compositors
+        function toggleAuto(): string {
+            return "ERROR: Auto profile selection is temporarily disabled due to compositor bugs";
+        }
+
+        function status(): string {
+            const auto = "off"; // disabled for now
+            const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
+            const matchedId = DisplayConfigState.matchedProfile;
+            const profiles = DisplayConfigState.validatedProfiles;
+            const activeName = profiles[activeId]?.name || "none";
+            const matchedName = profiles[matchedId]?.name || "none";
+            const currentOutputs = JSON.stringify(DisplayConfigState.currentOutputSet);
+
+            return `auto: ${auto}\nactive: ${activeName}\nmatched: ${matchedName}\noutputs: ${currentOutputs}`;
+        }
+
+        function current(): string {
+            return JSON.stringify(DisplayConfigState.currentOutputSet);
+        }
+
+        function refresh(): string {
+            DisplayConfigState.currentOutputSet = DisplayConfigState.buildCurrentOutputSet();
+            DisplayConfigState.validateProfiles();
+            return "Refreshed output state";
+        }
+
+        target: "outputs"
+    }
+
+    IpcHandler {
+        function findTrayItem(itemId: string): var {
+            if (!itemId)
+                return null;
+
+            return SystemTray.items.values.find(item => {
+                const id = item?.id || "";
+                const title = item?.tooltipTitle || "";
+                const fullKey = title ? `${id}::${title}` : id;
+                return fullKey === itemId || id === itemId;
+            });
+        }
+
+        function list(): string {
+            const items = SystemTray.items.values;
+            if (items.length === 0)
+                return "No tray items available";
+
+            return items.map(item => {
+                const id = item?.id || "";
+                const title = item?.tooltipTitle || "";
+                const fullKey = title ? `${id}::${title}` : id;
+                const hasMenu = item?.hasMenu ? " [menu]" : "";
+                return fullKey + hasMenu;
+            }).join("\n");
+        }
+
+        function activate(itemId: string): string {
+            const item = findTrayItem(itemId);
+            if (!item)
+                return `ERROR: Tray item not found: ${itemId}`;
+
+            item.activate();
+            return `SUCCESS: Activated ${itemId}`;
+        }
+
+        function status(itemId: string): string {
+            const item = findTrayItem(itemId);
+            if (!item)
+                return `ERROR: Tray item not found: ${itemId}`;
+
+            const id = item?.id || "";
+            const title = item?.tooltipTitle || "";
+            const hasMenu = item?.hasMenu || false;
+            const onlyMenu = item?.onlyMenu || false;
+
+            return `id: ${id}\ntitle: ${title}\nhasMenu: ${hasMenu}\nonlyMenu: ${onlyMenu}`;
+        }
+
+        target: "tray"
     }
 }

@@ -34,6 +34,8 @@ Variants {
         property bool groupByApp: SettingsData.dockGroupByApp
         readonly property int borderThickness: SettingsData.dockBorderEnabled ? SettingsData.dockBorderThickness : 0
 
+        readonly property int hasApps: dockApps.implicitWidth > 0 || dockApps.implicitHeight > 0
+
         readonly property real widgetHeight: SettingsData.dockIconSize
         readonly property real effectiveBarHeight: widgetHeight + SettingsData.dockSpacing * 2 + 10 + borderThickness * 2
         function getBarHeight(barConfig) {
@@ -180,6 +182,7 @@ Variants {
             }
 
             // Hyprland implementation
+            Hyprland.focusedWorkspace;
             const filtered = CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
 
             if (filtered.length === 0)
@@ -302,22 +305,21 @@ Variants {
             id: maskItem
             parent: dock.contentItem
             visible: false
+            readonly property bool expanded: dock.reveal
             x: {
                 const baseX = dockCore.x + dockMouseArea.x;
-                if (isVertical && SettingsData.dockPosition === SettingsData.Position.Right) {
-                    return baseX - animationHeadroom - borderThickness;
-                }
-                return baseX - borderThickness;
+                if (isVertical && SettingsData.dockPosition === SettingsData.Position.Right)
+                    return baseX - (expanded ? animationHeadroom + borderThickness : 0);
+                return baseX - (expanded ? borderThickness : 0);
             }
             y: {
                 const baseY = dockCore.y + dockMouseArea.y;
-                if (!isVertical && SettingsData.dockPosition === SettingsData.Position.Bottom) {
-                    return baseY - animationHeadroom - borderThickness;
-                }
-                return baseY - borderThickness;
+                if (!isVertical && SettingsData.dockPosition === SettingsData.Position.Bottom)
+                    return baseY - (expanded ? animationHeadroom + borderThickness : 0);
+                return baseY - (expanded ? borderThickness : 0);
             }
-            width: dockMouseArea.width + (isVertical ? animationHeadroom : 0) + borderThickness * 2
-            height: dockMouseArea.height + (!isVertical ? animationHeadroom : 0) + borderThickness * 2
+            width: dockMouseArea.width + (isVertical && expanded ? animationHeadroom : 0) + (expanded ? borderThickness * 2 : 0)
+            height: dockMouseArea.height + (!isVertical && expanded ? animationHeadroom : 0) + (expanded ? borderThickness * 2 : 0)
         }
 
         mask: Region {
@@ -379,13 +381,15 @@ Variants {
             if (!dock.isVertical) {
                 const isBottom = SettingsData.dockPosition === SettingsData.Position.Bottom;
                 const globalX = buttonGlobalPos.x + dock.hoveredButton.width / 2 + adjacentLeftBarWidth;
-                const screenRelativeY = isBottom ? (screenHeight - dock.effectiveBarHeight - SettingsData.dockSpacing - SettingsData.dockBottomGap - SettingsData.dockMargin - barSpacing - 35) : (buttonGlobalPos.y - screenY + dock.hoveredButton.height + Theme.spacingS);
+                const tooltipHeight = 32;
+                const tooltipOffset = dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin + barSpacing + Theme.spacingM;
+                const screenRelativeY = isBottom ? (screenHeight - tooltipOffset - tooltipHeight) : tooltipOffset;
                 dockTooltip.show(tooltipText, globalX, screenRelativeY, dock.screen, false, false);
                 return;
             }
 
             const isLeft = SettingsData.dockPosition === SettingsData.Position.Left;
-            const tooltipOffset = dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockMargin + barSpacing + Theme.spacingXS;
+            const tooltipOffset = dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin + barSpacing + Theme.spacingM;
             const tooltipX = isLeft ? tooltipOffset : (dock.screen.width - tooltipOffset);
             const screenRelativeY = buttonGlobalPos.y - screenY + dock.hoveredButton.height / 2 + adjacentTopBarHeight;
             dockTooltip.show(tooltipText, screenX + tooltipX, screenRelativeY, dock.screen, isLeft, !isLeft);
@@ -437,21 +441,19 @@ Variants {
 
                 height: {
                     if (dock.isVertical) {
-                        const extra = 4 + dock.borderThickness;
-                        const hiddenHeight = Math.min(Math.max(dockBackground.implicitHeight + 64, 200), screenHeight * 0.5);
-                        return dock.reveal ? Math.max(Math.min(dockBackground.implicitHeight + extra, maxDockHeight), hiddenHeight) : hiddenHeight;
-                    } else {
-                        return dock.reveal ? px(dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin) : 1;
+                        if (!dock.reveal)
+                            return Math.min(Math.max(dockBackground.height + 64, 200), screenHeight * 0.5);
+                        return Math.min(dockBackground.height + 8 + dock.borderThickness, maxDockHeight);
                     }
+                    return dock.reveal ? px(dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin) : 1;
                 }
                 width: {
                     if (dock.isVertical) {
                         return dock.reveal ? px(dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin) : 1;
-                    } else {
-                        const extra = 4 + dock.borderThickness;
-                        const hiddenWidth = Math.min(Math.max(dockBackground.implicitWidth + 64, 200), screenWidth * 0.5);
-                        return dock.reveal ? Math.max(Math.min(dockBackground.implicitWidth + extra, maxDockWidth), hiddenWidth) : hiddenWidth;
                     }
+                    if (!dock.reveal)
+                        return Math.min(Math.max(dockBackground.width + 64, 200), screenWidth * 0.5);
+                    return Math.min(dockBackground.width + 8 + dock.borderThickness, maxDockWidth);
                 }
                 anchors {
                     top: !dock.isVertical ? (SettingsData.dockPosition === SettingsData.Position.Bottom ? undefined : parent.top) : undefined
@@ -551,10 +553,10 @@ Variants {
                         layer.enabled: true
                         clip: false
 
-                        DankRectangle {
+                        Rectangle {
                             anchors.fill: parent
-                            color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, backgroundTransparency)
-                            overlayColor: Qt.rgba(Theme.surfaceTint.r, Theme.surfaceTint.g, Theme.surfaceTint.b, 0.04)
+                            color: Theme.withAlpha(Theme.surfaceContainer, backgroundTransparency)
+                            radius: Theme.cornerRadius
                         }
                     }
 
@@ -564,7 +566,7 @@ Variants {
                         y: dockBackground.y - borderThickness
                         width: dockBackground.width + borderThickness * 2
                         height: dockBackground.height + borderThickness * 2
-                        visible: SettingsData.dockBorderEnabled
+                        visible: SettingsData.dockBorderEnabled && dock.hasApps
                         preferredRendererType: Shape.CurveRenderer
 
                         readonly property real borderThickness: Math.max(1, dock.borderThickness)

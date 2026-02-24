@@ -26,11 +26,11 @@ Rectangle {
         return Theme.isLightMode ? Qt.darker(base, factor) : Qt.lighter(base, factor);
     }
 
-    readonly property color _tileBgActive: Theme.primary
+    readonly property color _tileBgActive: Theme.ccTileActiveBg
     readonly property color _tileBgInactive: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
-    readonly property color _tileRingActive: Qt.rgba(Theme.primaryText.r, Theme.primaryText.g, Theme.primaryText.b, 0.22)
-    readonly property color _tileIconActive: Theme.primaryText
-    readonly property color _tileIconInactive: Theme.primary
+    readonly property color _tileRingActive: Theme.ccTileRing
+    readonly property color _tileIconActive: Theme.ccTileActiveText
+    readonly property color _tileIconInactive: Theme.ccTileInactiveIcon
 
     color: {
         if (isActive)
@@ -66,12 +66,18 @@ Rectangle {
         onRotationCompleted: root.iconRotationCompleted()
     }
 
+    DankRipple {
+        id: ripple
+        cornerRadius: root.radius
+    }
+
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         enabled: root.enabled
+        onPressed: mouse => ripple.trigger(mouse.x, mouse.y)
         onClicked: root.clicked()
     }
 

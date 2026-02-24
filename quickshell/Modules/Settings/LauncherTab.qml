@@ -67,6 +67,8 @@ Item {
                                 modes.push("Sway");
                             } else if (CompositorService.isScroll) {
                                 modes.push("Scroll");
+                            } else if (CompositorService.isMiracle) {
+                                modes.push("Miracle");
                             } else {
                                 modes.push(I18n.tr("Compositor"));
                             }
@@ -416,6 +418,15 @@ Item {
                 }
 
                 SettingsToggleRow {
+                    settingKey: "dankLauncherV2UnloadOnClose"
+                    tags: ["launcher", "unload", "close", "memory", "vram"]
+                    text: I18n.tr("Unload on Close")
+                    description: I18n.tr("Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening.")
+                    checked: SettingsData.dankLauncherV2UnloadOnClose
+                    onToggled: checked => SettingsData.set("dankLauncherV2UnloadOnClose", checked)
+                }
+
+                SettingsToggleRow {
                     settingKey: "dankLauncherV2BorderEnabled"
                     tags: ["launcher", "border", "outline"]
                     text: I18n.tr("Border", "launcher border option")
@@ -722,7 +733,7 @@ Item {
                                                     anchors.centerIn: parent
                                                     text: "DMS"
                                                     font.pixelSize: Theme.fontSizeSmall - 2
-                                                    color: Theme.primaryText
+                                                    color: Theme.primary
                                                 }
                                             }
                                         }
@@ -1056,6 +1067,8 @@ Item {
                 iconName: "history"
                 title: I18n.tr("Recently Used Apps")
                 settingKey: "recentApps"
+                collapsible: true
+                expanded: false
 
                 property var rankedAppsModel: {
                     var ranking = AppUsageHistoryData.appUsageRanking;
@@ -1209,7 +1222,7 @@ Item {
 
                     StyledText {
                         width: parent.width
-                        text: "No apps have been launched yet."
+                        text: I18n.tr("No apps have been launched yet.")
                         font.pixelSize: Theme.fontSizeMedium
                         color: Theme.surfaceVariantText
                         horizontalAlignment: Text.AlignHCenter
